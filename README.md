@@ -22,20 +22,16 @@ A lightweight operating model for AI-assisted software work.
 
 ---
 
-## Inspiration & profiles
+## Inspiration & profile
 
-DreamTeam 2.0 is mainly inspired by two strong open-source directions:
+DreamTeam 2.0 is inspired by one primary open-source direction:
 
 ### Garry Tan / gstack
 - Repo: <https://github.com/garrytan/gstack>
 - Why it matters: strong workflow abstraction, explicit modes, builder-facing orchestration
 
-### 666ghj (BaiFu) / BettaFish
-- Repo: <https://github.com/666ghj/BettaFish>
-- Why it matters: strong product framing, clear engine decomposition, structured outputs, great demoability
-
-DreamTeam 2.0 does **not** copy either system directly.
-It takes workflow clarity from **gstack** and product/structure lessons from **BettaFish**, then compresses them into a lighter runbook.
+DreamTeam 2.0 does **not** copy gstack directly.
+It takes the workflow clarity and operating-mode thinking, then compresses them into a lighter, more Codex-friendly runbook with stronger token discipline.
 
 ---
 

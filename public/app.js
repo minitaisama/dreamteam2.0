@@ -60,6 +60,14 @@
         state.source = 'gist';
         state.lastFetchedAt = nowMs();
         state.error = null;
+
+        // Notify any UI listeners that a load finished
+        try {
+          window.dispatchEvent(new CustomEvent('dreamteam:live', { detail: { state: getState() } }));
+        } catch (_) {
+          // ignore
+        }
+
         return;
       } catch (e) {
         state.error = e;
@@ -74,6 +82,13 @@
       state.lastFetchedAt = nowMs();
     } catch (e2) {
       state.error = e2;
+    }
+
+    // Notify any UI listeners that a load finished
+    try {
+      window.dispatchEvent(new CustomEvent('dreamteam:live', { detail: { state: getState() } }));
+    } catch (_) {
+      // ignore
     }
   }
 
@@ -158,6 +173,13 @@
     setInterval(async () => {
       await loadOnce();
       renderLastUpdated();
+
+      // Notify listeners on each poll too
+      try {
+        window.dispatchEvent(new CustomEvent('dreamteam:live', { detail: { state: getState() } }));
+      } catch (_) {
+        // ignore
+      }
     }, POLL_MS);
 
     // Update the "ago" text every 1s without refetching

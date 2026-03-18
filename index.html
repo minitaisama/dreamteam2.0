@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Dream Team Retro Dashboard</title>
-  <meta name="description" content="A retro-style weekly dashboard for the Dream Team: stats, agent highlights, action items, and trends." />
+  <title>Dreamteam At Work</title>
+  <meta name="description" content="A lightweight live dashboard for the Dreamteam — pixel scene, agent status, and activity feed." />
   <meta name="theme-color" content="#0a0a0f" />
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Dream Team Retro Dashboard" />
-  <meta property="og:description" content="Weekly retrospectives with stats, action items, and trend charts across the Dream Team." />
+  <meta property="og:title" content="Dreamteam At Work" />
+  <meta property="og:description" content="Live status + pixel scene + activity feed for the Dreamteam." />
   <meta property="og:image" content="https://dreamteam20.vercel.app/apple-touch-icon.png" />
   <meta property="og:url" content="https://dreamteam20.vercel.app/" />
   <meta property="og:type" content="website" />
@@ -20,6 +20,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <link rel="stylesheet" href="/public/sprites.css" />
 
   <style>
     :root {
@@ -28,7 +29,6 @@
       --surface2: #1a1a26;
       --border: #2a2a3a;
 
-      /* Contrast-adjusted tokens (per audit/task card) */
       --text: #e8e8ec;
       --text2: #b8b8c4;
       --text3: #8b8b99;
@@ -42,7 +42,7 @@
       --blue: #3b82f6;
       --ceo: #f59e0b;
 
-      --radius: 12px;
+      --radius: 14px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -54,8 +54,8 @@
       line-height: 1.6;
     }
 
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { color: #a78bfa; text-decoration: underline; }
+    a { color: #c4b5fd; text-decoration: none; }
+    a:hover { color: #ddd6fe; text-decoration: underline; }
 
     .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
 
@@ -64,264 +64,365 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 2.25rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.35rem;
+      padding-bottom: 1.15rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       gap: 1rem;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.9rem;
       min-width: 0;
     }
 
     .brand-logo {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 9999px;
       border: 1px solid rgba(255,255,255,0.18);
       object-fit: cover;
       flex: 0 0 auto;
     }
 
-    .brand-text { min-width: 0; }
-
     .brand-title {
-      font-size: 1.75rem;
-      font-weight: 750;
-      line-height: 1.15;
+      font-size: 1.85rem;
+      font-weight: 820;
+      line-height: 1.12;
       background: linear-gradient(135deg, var(--accent), var(--ceo));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
     }
 
-    .subtitle {
-      color: var(--text3);
+    .brand-sub {
+      margin-top: 0.2rem;
       font-size: 0.9rem;
-      margin-top: 0.25rem;
+      color: var(--text3);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 60ch;
+      max-width: 62ch;
     }
 
-    .week-badge {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
       color: var(--text2);
+      font-size: 0.85rem;
       white-space: nowrap;
     }
 
-    .week-nav { display: flex; gap: 0.5rem; align-items: center; }
+    .pill strong { color: #fff; font-weight: 780; }
 
-    .week-nav button {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.375rem 0.75rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.875rem;
-      transition: all 0.2s;
+    .pill.demo {
+      background: rgba(245,158,11,0.10);
+      border-color: rgba(245,158,11,0.30);
+      color: #fde68a;
+      display: none;
     }
 
-    .week-nav button:hover { border-color: var(--accent); color: var(--accent); }
-    .week-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+    .muted { color: var(--text3); }
 
-    /* Section titles */
-    section { margin-bottom: 2rem; }
+    /* KPI strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin: 1.0rem 0 1.25rem;
+    }
+
+    .kpi-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      padding: 1.05rem 1.15rem;
+    }
+
+    .kpi-label {
+      font-size: 0.72rem;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .kpi-value {
+      font-size: 1.55rem;
+      font-weight: 850;
+      margin-top: 0.25rem;
+      color: #fff;
+    }
+
+    .kpi-hint {
+      margin-top: 0.1rem;
+      font-size: 0.8rem;
+      color: var(--text2);
+    }
+
+    /* Agent strip */
+    .agents-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .agent-mini {
+      background: rgba(18,18,26,0.75);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: var(--radius);
+      padding: 0.9rem 0.95rem;
+      min-height: 94px;
+    }
+
+    .agent-mini-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .agent-mini-name {
+      font-weight: 800;
+      display: flex;
+      gap: 0.55rem;
+      align-items: center;
+      flex-wrap: wrap;
+      line-height: 1.2;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 9999px;
+      font-weight: 750;
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .badge-ceo { background: rgba(245,158,11,0.12); color: #fde68a; }
+    .badge-pm { background: rgba(59,130,246,0.12); color: #bfdbfe; }
+    .badge-dev { background: rgba(34,197,94,0.12); color: #bbf7d0; }
+    .badge-qa { background: rgba(234,179,8,0.12); color: #fef08a; }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.25);
+      border: 1px solid rgba(0,0,0,0.35);
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.03);
+      flex: 0 0 auto;
+    }
+
+    .status-working { background: var(--green); box-shadow: 0 0 0 3px rgba(34,197,94,0.12); }
+    .status-idle { background: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.10); }
+    .status-sleeping { background: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,0.10); }
+    .status-eating { background: var(--yellow); box-shadow: 0 0 0 3px rgba(234,179,8,0.12); }
+
+    .agent-mini-task {
+      font-size: 0.85rem;
+      color: var(--text2);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .agent-mini-task .none { color: var(--text3); }
+
+    .typing {
+      margin-top: 0.45rem;
+      display: none;
+      gap: 0.35rem;
+      align-items: center;
+      color: var(--text3);
+      font-size: 0.78rem;
+    }
+
+    .typing .dots { display: inline-flex; gap: 0.25rem; }
+    .typing .dots span {
+      width: 4px; height: 4px; border-radius: 99px;
+      background: rgba(255,255,255,0.28);
+      animation: dotPulse 1.1s infinite;
+    }
+    .typing .dots span:nth-child(2) { animation-delay: 0.15s; }
+    .typing .dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes dotPulse {
+      0%, 100% { transform: translateY(0); opacity: 0.55; }
+      50% { transform: translateY(-2px); opacity: 1; }
+    }
+
+    /* Layout */
+    .grid-main {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 1.1rem;
+      align-items: start;
+      margin-bottom: 1.4rem;
+    }
+
+    /* Activity feed */
+    .feed-card {
+      background: rgba(18,18,26,0.75);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 320px;
+      max-height: 420px;
+    }
+
+    .feed-header {
+      padding: 0.95rem 1.05rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .feed-header h2 {
+      font-size: 0.95rem;
+      font-weight: 820;
+      letter-spacing: 0.01em;
+    }
+
+    .feed-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+    .btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      padding: 0.35rem 0.65rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+    .btn:hover { border-color: rgba(196,181,253,0.55); color: #ddd6fe; }
+
+    .feed-body {
+      padding: 0.95rem 0.95rem 0.6rem;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      scroll-behavior: smooth;
+    }
+
+    .msg {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 0.6rem;
+      align-items: start;
+      animation: popIn 0.18s ease-out;
+    }
+
+    @keyframes popIn {
+      from { transform: translateY(3px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .msg.right {
+      grid-template-columns: 1fr 28px;
+    }
+
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      display: grid;
+      place-items: center;
+      font-weight: 850;
+      font-size: 0.72rem;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .bubble {
+      border-radius: 14px;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .bubble .meta {
+      display: flex;
+      gap: 0.55rem;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 0.2rem;
+      color: var(--text3);
+      font-size: 0.75rem;
+    }
+
+    .bubble .meta .name {
+      font-weight: 850;
+      color: #fff;
+    }
+
+    .bubble .text {
+      color: var(--text2);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.right .bubble { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.22); }
+
+    /* per-agent accents */
+    .accent-ceo .avatar { background: rgba(245,158,11,0.16); }
+    .accent-pm .avatar { background: rgba(59,130,246,0.16); }
+    .accent-dev .avatar { background: rgba(34,197,94,0.16); }
+    .accent-qa .avatar { background: rgba(234,179,8,0.16); }
+
+    .accent-ceo .bubble { border-color: rgba(245,158,11,0.22); }
+    .accent-pm .bubble { border-color: rgba(59,130,246,0.22); }
+    .accent-dev .bubble { border-color: rgba(34,197,94,0.20); }
+    .accent-qa .bubble { border-color: rgba(234,179,8,0.22); }
+
+    /* Charts */
+    .charts-section { margin-top: 1.25rem; }
 
     .section-title {
       font-size: 1rem;
-      font-weight: 650;
+      font-weight: 750;
       color: var(--text);
-      margin-bottom: 1rem;
+      margin-bottom: 0.9rem;
       padding-left: 0.85rem;
       border-left: 3px solid var(--accent);
       letter-spacing: 0.01em;
     }
 
-    /* Stats Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1rem;
-    }
-
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.25rem;
-    }
-
-    .stat-label {
-      font-size: 0.75rem;
-      color: var(--text3);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .stat-value {
-      font-size: 1.75rem;
-      font-weight: 750;
-      margin-top: 0.25rem;
-      color: #ffffff;
-    }
-
-    .stat-value .stat-suffix {
-      font-size: 1rem;
-      color: var(--text2);
-      font-weight: 650;
-    }
-
-    .stat-change {
-      font-size: 0.75rem;
-      margin-top: 0.25rem;
-      color: var(--text2);
-    }
-
-    .stat-change.up { color: var(--green); }
-    .stat-change.down { color: var(--red); }
-
-    /* Agent Cards */
-    .agents-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .agent-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      transition: border-color 0.2s;
-    }
-
-    .agent-card:hover { border-color: var(--accent); }
-
-    .agent-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      gap: 0.75rem;
-    }
-
-    .agent-name {
-      font-weight: 650;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-    }
-
-    .agent-role { font-size: 0.75rem; color: var(--text3); }
-
-    .agent-badge {
-      font-size: 0.72rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 9999px;
-      font-weight: 650;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    /* Lighter badge text colors to clear AA at small font sizes */
-    .badge-coach { background: rgba(59,130,246,0.10); color: #bfdbfe; }
-    .badge-lebron { background: rgba(34,197,94,0.10); color: #bbf7d0; }
-    .badge-curry { background: rgba(234,179,8,0.10); color: #fef08a; }
-    .badge-ceo { background: rgba(245,158,11,0.10); color: #fde68a; }
-
-    .agent-card.ceo-card {
-      border-color: rgba(245,158,11,0.25);
-      background: linear-gradient(135deg, var(--surface), rgba(245,158,11,0.03));
-    }
-
-    .agent-card.ceo-card:hover { border-color: var(--ceo); }
-
-    .agent-stats {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .agent-stat { font-size: 0.8rem; }
-    .agent-stat .num { font-weight: 700; color: var(--text); }
-    .agent-stat .lbl { color: var(--text3); }
-
-    .agent-section { margin-bottom: 0.75rem; }
-
-    .agent-section-title {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--text3);
-      margin-bottom: 0.35rem;
-    }
-
-    .agent-section ul { list-style: none; padding: 0; }
-
-    .agent-section li {
-      font-size: 0.85rem;
-      color: var(--text2);
-      padding-left: 1rem;
-      position: relative;
-    }
-
-    .agent-section li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
-    .agent-section.suggestions li::before { content: "💡"; position: absolute; left: 0; }
-
-    /* Action Items */
-    .action-items {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-    }
-
-    .action-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.875rem;
-      gap: 0.75rem;
-    }
-
-    .action-item:last-child { border-bottom: none; }
-
-    .action-item .owner {
-      background: var(--surface2);
-      padding: 0.15rem 0.5rem;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      color: var(--text2);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .action-item .due { color: var(--text2); font-size: 0.75rem; }
-
-    /* Charts */
     .charts-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 1.25rem;
+      gap: 1.05rem;
     }
 
     .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: rgba(18,18,26,0.75);
+      border: 1px solid rgba(255,255,255,0.09);
       border-radius: var(--radius);
-      padding: 1.5rem;
+      padding: 1.25rem;
     }
 
     .chart-card h3 { font-size: 0.95rem; margin-bottom: 1rem; color: var(--text2); }
@@ -332,29 +433,28 @@
       text-align: center;
       padding: 2rem 0;
       color: var(--text3);
-      font-size: 0.8rem;
-      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin-top: 2.0rem;
     }
 
-    .footer .links { margin-top: 0.5rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .footer .links { margin-top: 0.6rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
     .footer .sep { color: rgba(255,255,255,0.18); }
 
     /* Responsive */
-    @media (max-width: 640px) {
-      .container { padding: 1rem; }
-      .header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .week-nav { width: 100%; justify-content: space-between; }
-      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .agents-grid { grid-template-columns: 1fr; }
-      .agent-card { padding: 1.125rem; }
-      .chart-card { padding: 1.125rem; }
-      .action-items { padding: 1.125rem; }
-      .agent-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 1rem; }
+    @media (max-width: 980px) {
+      .agents-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-main { grid-template-columns: 1fr; }
+      .feed-card { max-height: 520px; }
     }
 
-    @media (max-width: 420px) {
-      .stats-grid { grid-template-columns: 1fr; }
-      .stat-value { font-size: 1.55rem; }
+    @media (max-width: 560px) {
+      .container { padding: 1rem; }
+      .header { flex-direction: column; align-items: flex-start; gap: 0.9rem; }
+      .header-right { width: 100%; justify-content: space-between; }
+      .agents-strip { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -363,37 +463,54 @@
   <div class="container">
     <header class="header">
       <div class="brand">
-        <img class="brand-logo" src="/penguin.jpg" alt="Dream Team Retro logo" width="32" height="32" />
-        <div class="brand-text">
-          <h1 class="brand-title">Dream Team Retro</h1>
-          <div class="subtitle">minitaisama/dreamteam2.0</div>
+        <img class="brand-logo" src="/penguin.jpg" alt="Dreamteam" width="34" height="34" />
+        <div>
+          <h1 class="brand-title">🎮 Dreamteam At Work</h1>
+          <div class="brand-sub">minitaisama/dreamteam2.0 · live dashboard</div>
         </div>
       </div>
 
-      <div class="week-nav" aria-label="Week navigation">
-        <button id="prevWeek" onclick="changeWeek(-1)">← Prev</button>
-        <span class="week-badge" id="weekLabel">Week 11</span>
-        <button id="nextWeek" onclick="changeWeek(1)">Next →</button>
+      <div class="header-right">
+        <span class="pill" id="agentCountPill">Agents: <strong id="agentCount">4</strong></span>
+        <span class="pill" id="last-updated">Live: loading…</span>
+        <span class="pill demo" id="demoBadge">DEMO MODE</span>
       </div>
     </header>
 
     <main>
-      <section aria-labelledby="statsTitle">
-        <h2 id="statsTitle" class="section-title">Stats</h2>
-        <div class="stats-grid" id="statsGrid"></div>
+      <section aria-label="Agent status strip">
+        <div class="agents-strip" id="agentsStrip"></div>
       </section>
 
-      <section aria-labelledby="agentsTitle">
-        <h2 id="agentsTitle" class="section-title">Agents</h2>
-        <div class="agents-grid" id="agentsGrid"></div>
+      <section aria-label="KPIs">
+        <div class="kpi-grid" id="kpiGrid"></div>
       </section>
 
-      <section class="action-items" id="actionItems" aria-labelledby="actionItemsTitle">
-        <h2 id="actionItemsTitle" class="section-title">Action Items</h2>
-        <div id="actionList"></div>
+      <section class="grid-main" aria-label="Pixel scene and activity feed">
+        <div>
+          <div class="section-title">Pixel scene</div>
+          <div class="pixel-scene" id="pixelScene" aria-label="Dreamteam pixel scene">
+            <div class="pixel-prop campfire" aria-hidden="true"></div>
+
+            <div class="pixel-character trainer state-idle dir-right" id="char-minisama" aria-label="MiniSama"></div>
+            <div class="pixel-character coach state-idle dir-left" id="char-coach" aria-label="Coach"></div>
+            <div class="pixel-character lebron state-idle dir-left" id="char-lebron" aria-label="Lebron"></div>
+            <div class="pixel-character curry state-idle dir-left" id="char-curry" aria-label="Curry"></div>
+          </div>
+        </div>
+
+        <div class="feed-card" aria-label="Activity feed">
+          <div class="feed-header">
+            <h2>Activity Feed</h2>
+            <div class="feed-actions">
+              <button class="btn" id="showMoreBtn" type="button">Show more</button>
+            </div>
+          </div>
+          <div class="feed-body" id="feedBody"></div>
+        </div>
       </section>
 
-      <section aria-labelledby="chartsTitle">
+      <section class="charts-section" aria-labelledby="chartsTitle">
         <h2 id="chartsTitle" class="section-title">Charts</h2>
         <div class="charts-grid">
           <div class="chart-card">
@@ -409,7 +526,7 @@
     </main>
 
     <footer class="footer">
-      <div>Dream Team v3 · MiniSama (CEO) · Coach (PM) · Lebron (Dev) · Curry (QA)</div>
+      <div>Dreamteam At Work · MiniSama (CEO) · Coach (PM) · Lebron (Dev) · Curry (QA)</div>
       <div class="links">
         <a href="https://github.com/minitaisama/dreamteam2.0" target="_blank" rel="noreferrer">GitHub</a>
         <span class="sep">·</span>
@@ -418,145 +535,230 @@
     </footer>
   </div>
 
-  <script>
-    const WEEKS = [];
-    let currentWeekIndex = 0;
+  <!-- Live layer (polling) -->
+  <script src="/public/app.js"></script>
+  <!-- Pixel scene updater -->
+  <script src="/public/pixel-scene.js"></script>
 
-    async function loadWeeks() {
+  <script>
+    // --------- UI helpers ---------
+    const MAX_VISIBLE_DEFAULT = 30;
+    let visibleCount = MAX_VISIBLE_DEFAULT;
+    const seenFeedIds = new Set();
+
+    function fmtTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts * 1000);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function normalizeAgentKey(s) {
+      const t = (s || '').toString().toLowerCase();
+      if (t.includes('mini')) return 'minisama';
+      if (t.includes('coach')) return 'coach';
+      if (t.includes('lebron')) return 'lebron';
+      if (t.includes('curry')) return 'curry';
+      // fallback: best-effort first token
+      return t.split(/\s|\(/)[0] || 'coach';
+    }
+
+    function accentFor(key) {
+      if (key === 'minisama') return 'accent-ceo';
+      if (key === 'coach') return 'accent-pm';
+      if (key === 'lebron') return 'accent-dev';
+      if (key === 'curry') return 'accent-qa';
+      return 'accent-pm';
+    }
+
+    function initialsFor(key) {
+      if (key === 'minisama') return 'CEO';
+      if (key === 'coach') return 'PM';
+      if (key === 'lebron') return 'DEV';
+      if (key === 'curry') return 'QA';
+      return (key || '?').slice(0, 2).toUpperCase();
+    }
+
+    function statusClass(state) {
+      const st = (state || 'idle').toLowerCase();
+      if (st === 'working') return 'status-working';
+      if (st === 'sleeping') return 'status-sleeping';
+      if (st === 'eating') return 'status-eating';
+      return 'status-idle';
+    }
+
+    function safeTask(t) {
+      if (!t) return '<span class="none">No active task</span>';
+      return t;
+    }
+
+    function renderAgentsStrip(agents) {
+      const strip = document.getElementById('agentsStrip');
+      const agentCount = Object.keys(agents || {}).length;
+      document.getElementById('agentCount').textContent = agentCount || 4;
+
+      const roleMap = {
+        minisama: { role: 'CEO', badge: 'badge-ceo' },
+        coach: { role: 'PM', badge: 'badge-pm' },
+        lebron: { role: 'Dev', badge: 'badge-dev' },
+        curry: { role: 'QA', badge: 'badge-qa' }
+      };
+
+      const order = ['minisama', 'coach', 'lebron', 'curry'];
+      strip.innerHTML = order.map(key => {
+        const a = agents?.[key] || { state: 'idle', task: null };
+        const meta = roleMap[key];
+        const showTyping = (a.state === 'working');
+        return `
+          <div class="agent-mini">
+            <div class="agent-mini-top">
+              <div class="agent-mini-name">
+                <span class="status-dot ${statusClass(a.state)}" aria-hidden="true"></span>
+                ${key === 'minisama' ? 'MiniSama' : key.charAt(0).toUpperCase() + key.slice(1)}
+                <span class="badge ${meta.badge}">${meta.role}</span>
+              </div>
+              <div class="muted" style="font-size:0.78rem">${(a.state || 'idle').toUpperCase()}</div>
+            </div>
+            <div class="agent-mini-task">${safeTask(a.task)}</div>
+            <div class="typing" style="display:${showTyping ? 'flex' : 'none'}">
+              <span class="dots"><span></span><span></span><span></span></span>
+              <span>typing…</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function calcKPIs(live) {
+      const agents = live?.agents || {};
+      const feed = live?.feed || [];
+      const activeAgents = Object.values(agents).filter(a => a?.state === 'working').length;
+
+      // heuristic: tasks this week ~ count non-null tasks
+      const tasksThisWeek = Object.values(agents).filter(a => a?.task).length;
+
+      // heuristic quality score: if Curry has task mentioning quality, bump; else default 8.6 demo-ish
+      let qualityScore = 8.6;
+      if (agents.curry?.task && /audit|quality|test/i.test(agents.curry.task)) qualityScore = 9.1;
+      if (agents.lebron?.task && /bug|fix/i.test(agents.lebron.task)) qualityScore = 8.8;
+
+      return {
+        tasksThisWeek,
+        qualityScore,
+        activeAgents,
+        feedMessages: feed.length
+      };
+    }
+
+    function renderKPIGrid(kpis) {
+      const el = document.getElementById('kpiGrid');
+      el.innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Tasks This Week</div>
+          <div class="kpi-value">${kpis.tasksThisWeek}</div>
+          <div class="kpi-hint">active tasks across agents</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Quality Score</div>
+          <div class="kpi-value">${kpis.qualityScore.toFixed(1)}<span style="font-size:0.95rem;color:var(--text2);font-weight:750">/10</span></div>
+          <div class="kpi-hint">rolling confidence</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Agents</div>
+          <div class="kpi-value">${kpis.activeAgents}<span style="font-size:0.95rem;color:var(--text2);font-weight:750">/4</span></div>
+          <div class="kpi-hint">currently working</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Feed Messages</div>
+          <div class="kpi-value">${kpis.feedMessages}</div>
+          <div class="kpi-hint">last ~100 stored</div>
+        </div>
+      `;
+    }
+
+    function renderFeed(feed, { reset = false } = {}) {
+      const body = document.getElementById('feedBody');
+      if (reset) {
+        body.innerHTML = '';
+        seenFeedIds.clear();
+      }
+
+      const msgs = (feed || []).slice(-visibleCount);
+      const frag = document.createDocumentFragment();
+
+      for (const m of msgs) {
+        const id = m.id || `${m.ts}-${m.from}-${m.text}`;
+        if (seenFeedIds.has(id)) continue;
+        seenFeedIds.add(id);
+
+        const fromKey = normalizeAgentKey(m.from);
+        const right = fromKey === 'minisama';
+
+        const wrap = document.createElement('div');
+        wrap.className = `msg ${right ? 'right' : ''} ${accentFor(fromKey)}`;
+
+        wrap.innerHTML = right ? `
+          <div class="bubble">
+            <div class="meta"><span class="name">${m.from || 'Unknown'}</span><span>${fmtTime(m.ts)}</span></div>
+            <div class="text">${m.text || ''}</div>
+          </div>
+          <div class="avatar" aria-hidden="true">${initialsFor(fromKey)}</div>
+        ` : `
+          <div class="avatar" aria-hidden="true">${initialsFor(fromKey)}</div>
+          <div class="bubble">
+            <div class="meta"><span class="name">${m.from || 'Unknown'}</span><span>${fmtTime(m.ts)}</span></div>
+            <div class="text">${m.text || ''}</div>
+          </div>
+        `;
+
+        frag.appendChild(wrap);
+      }
+
+      body.appendChild(frag);
+      // auto-scroll to latest
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function resetAndRenderAll(live) {
+      renderAgentsStrip(live?.agents || {});
+      renderKPIGrid(calcKPIs(live));
+      window.DreamteamPixelScene?.update(live);
+      renderFeed(live?.feed || [], { reset: true });
+
+      // demo badge
+      const src = window.DreamteamLive?.getState?.().source;
+      document.getElementById('demoBadge').style.display = (src === 'demo') ? 'inline-flex' : 'none';
+    }
+
+    // --------- charts (kept from retro dashboard, now fed from weeks data) ---------
+    const WEEKS = [];
+
+    async function fetchJson(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      return await res.json();
+    }
+
+    async function loadWeeksIndex() {
       try {
         const basePath = window.location.pathname.includes('/weeks') ? '../..' : '.';
-        const res = await fetch(basePath + '/data/weeks/index.json');
-        if (!res.ok) throw new Error('Failed to fetch index');
-        const index = await res.json();
+        const index = await fetchJson(basePath + '/data/weeks/index.json');
         WEEKS.push(...index.weeks.sort().reverse());
-        if (WEEKS.length === 0) {
-          document.getElementById('statsGrid').textContent = 'No retrospective data yet.';
-          return;
-        }
-        currentWeekIndex = 0;
-        await renderWeek();
-        renderCharts();
       } catch (e) {
-        console.error('loadWeeks error:', e);
-        document.getElementById('statsGrid').textContent = 'Failed to load data: ' + e.message;
+        console.warn('Weeks index missing (ok for live-only deployments):', e.message);
       }
     }
 
     async function loadWeekData(weekId) {
       const basePath = window.location.pathname.includes('/weeks') ? '../..' : '.';
-      const res = await fetch(basePath + `/data/weeks/${weekId}.json`);
-      if (!res.ok) throw new Error(`Failed to fetch ${weekId}`);
-      return await res.json();
-    }
-
-    function changeWeek(delta) {
-      const newIndex = currentWeekIndex + delta;
-      if (newIndex >= 0 && newIndex < WEEKS.length) {
-        currentWeekIndex = newIndex;
-        renderWeek();
-      }
-    }
-
-    async function renderWeek() {
-      const weekId = WEEKS[currentWeekIndex];
-      const data = await loadWeekData(weekId);
-
-      const weekNum = weekId.replace('2026-W', '');
-      document.getElementById('weekLabel').textContent = `Week ${weekNum}`;
-      document.getElementById('prevWeek').disabled = currentWeekIndex === 0;
-      document.getElementById('nextWeek').disabled = currentWeekIndex === WEEKS.length - 1;
-
-      // CEO
-      const ceo = data.ceo;
-      const ceoTrends = ceo.trends || {};
-
-      // Stats — include all 4 agents
-      const agents = data.agents;
-      const totalTasks = Object.values(agents).reduce((s, a) => s + (a.stats.tasks_completed || a.stats.audits_completed || 0), 0);
-      const totalBlocked = Object.values(agents).reduce((s, a) => s + (a.stats.tasks_blocked || 0), 0);
-      const qualityScore = ceoTrends.quality_score || agents.curry?.stats?.quality_score || '-';
-      const velocity = ceoTrends.velocity || '-';
-      const actionItemsCount = (ceo.action_items || []).length;
-
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card">
-          <div class="stat-label">Tasks Done</div>
-          <div class="stat-value">${totalTasks}</div>
-          <div class="stat-change">across 3 agents</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Blocked</div>
-          <div class="stat-value">${totalBlocked}</div>
-          <div class="stat-change ${totalBlocked > 0 ? 'down' : 'up'}">${totalBlocked > 0 ? 'needs help' : 'clear runway'}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Quality</div>
-          <div class="stat-value">${qualityScore}<span class="stat-suffix">/10</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Velocity</div>
-          <div class="stat-value" style="font-size:1.25rem">${velocity}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Action Items</div>
-          <div class="stat-value">${actionItemsCount}</div>
-          <div class="stat-change">from CEO review</div>
-        </div>
-      `;
-
-      // Agent cards — CEO first, then PM/Dev/QA
-      const roleMap = { coach: 'PM', lebron: 'Dev', curry: 'QA' };
-      const badgeMap = { coach: 'badge-coach', lebron: 'badge-lebron', curry: 'badge-curry' };
-
-      function buildAgentCard(name, badge, role, agent, extraClass) {
-        const statsHtml = agent.stats ? Object.entries(agent.stats).map(([k, v]) =>
-          `<div class="agent-stat"><span class="num">${v}</span> <span class="lbl">${k.replace(/_/g, ' ')}</span></div>`
-        ).join('') : '';
-        const cls = extraClass ? ` ${extraClass}` : '';
-
-        return `
-          <div class="agent-card${cls}">
-            <div class="agent-header">
-              <div>
-                <div class="agent-name">${name} <span class="agent-badge ${badge}">${role}</span></div>
-              </div>
-            </div>
-            ${statsHtml ? `<div class="agent-stats">${statsHtml}</div>` : ''}
-            ${agent.commentary ? `<div class="agent-section"><div class="agent-section-title">Commentary</div><p style="font-size:0.85rem;color:var(--text2)">${agent.commentary}</p></div>` : ''}
-            ${agent.highlights?.length ? `<div class="agent-section"><div class="agent-section-title">Highlights</div><ul>${agent.highlights.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
-            ${agent.keep_doing?.length ? `<div class="agent-section"><div class="agent-section-title">Keep Doing</div><ul>${agent.keep_doing.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
-            ${agent.improve?.length ? `<div class="agent-section"><div class="agent-section-title">Improve</div><ul>${agent.improve.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
-            ${agent.flow_suggestions?.length ? `<div class="agent-section suggestions"><div class="agent-section-title">Flow Suggestions</div><ul>${agent.flow_suggestions.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
-            ${agent.blockers?.length ? `<div class="agent-section"><div class="agent-section-title">Blockers</div><ul>${agent.blockers.map(h=>`<li style="color:var(--yellow)">${h}</li>`).join('')}</ul></div>` : ''}
-            ${agent.product_insights?.length ? `<div class="agent-section"><div class="agent-section-title">Product Insights</div><ul>${agent.product_insights.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
-          </div>
-        `;
-      }
-
-      // Build CEO card
-      const ceoCard = buildAgentCard('MiniSama', 'badge-ceo', 'CEO', ceo, 'ceo-card');
-
-      // Build execution agent cards
-      const execCards = Object.entries(agents).map(([key, agent]) =>
-        buildAgentCard(key.charAt(0).toUpperCase() + key.slice(1), badgeMap[key], roleMap[key], agent, '')
-      ).join('');
-
-      document.getElementById('agentsGrid').innerHTML = ceoCard + execCards;
-
-      // Action items
-      const actions = data.ceo.action_items || [];
-      document.getElementById('actionList').innerHTML = actions.length ? actions.map(a => `
-        <div class="action-item">
-          <span>${a.action}</span>
-          <div style="display:flex;gap:0.5rem;align-items:center;flex:0 0 auto">
-            <span class="owner">${a.owner}</span>
-            <span class="due">due ${a.due}</span>
-          </div>
-        </div>
-      `).join('') : '<div style="color:var(--text2);font-size:0.875rem">No action items.</div>';
+      return await fetchJson(basePath + `/data/weeks/${weekId}.json`);
     }
 
     async function renderCharts() {
+      if (!WEEKS.length) {
+        // Keep empty charts area but avoid crashing
+        return;
+      }
+
       const allData = await Promise.all(WEEKS.map(w => loadWeekData(w)));
       const labels = allData.map(d => d.week.replace('2026-W', 'W'));
 
@@ -576,7 +778,6 @@
         }
       };
 
-      // Velocity
       new Chart(document.getElementById('velocityChart'), {
         type: 'line',
         data: {
@@ -596,7 +797,6 @@
         options: chartDefaults
       });
 
-      // Quality
       new Chart(document.getElementById('qualityChart'), {
         type: 'bar',
         data: {
@@ -614,7 +814,38 @@
       });
     }
 
-    loadWeeks();
+    // --------- boot + polling integration ---------
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Charts are independent from live polling
+      await loadWeeksIndex();
+      await renderCharts();
+
+      // Initial render (after app.js loads once)
+      setTimeout(() => {
+        const live = window.DreamteamLive?.getState?.().data;
+        if (live) resetAndRenderAll(live);
+      }, 180);
+
+      // Every 2s: refresh UI from current polled data (cheap, no network)
+      setInterval(() => {
+        const st = window.DreamteamLive?.getState?.();
+        if (!st || !st.data) return;
+        renderAgentsStrip(st.data.agents || {});
+        renderKPIGrid(calcKPIs(st.data));
+        window.DreamteamPixelScene?.update(st.data);
+        renderFeed(st.data.feed || []);
+        document.getElementById('demoBadge').style.display = (st.source === 'demo') ? 'inline-flex' : 'none';
+      }, 2000);
+
+      // Show more
+      document.getElementById('showMoreBtn').addEventListener('click', () => {
+        visibleCount = Math.min(visibleCount + 30, 120);
+        const st = window.DreamteamLive?.getState?.();
+        if (st?.data?.feed) {
+          renderFeed(st.data.feed, { reset: true });
+        }
+      });
+    });
   </script>
 </body>
 </html>

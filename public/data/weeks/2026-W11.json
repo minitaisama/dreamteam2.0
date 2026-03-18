@@ -1,0 +1,69 @@
+{
+  "week": "2026-W11",
+  "agents": {
+    "coach": {
+      "submitted": "2026-03-16T20:00:00+07:00",
+      "stats": {
+        "tasks_dispatched": 4,
+        "tasks_completed": 3,
+        "tasks_blocked": 1
+      },
+      "highlights": ["Coordinated tu-vi Layer 2 + 3 update end-to-end", "Improved task card format with clearer acceptance criteria"],
+      "keep_doing": ["Tiny task card approach reducing scope drift"],
+      "improve": ["Need to include design requirements for UI tasks"],
+      "flow_suggestions": ["Add diagram requirement for complex multi-step tasks"],
+      "blockers": []
+    },
+    "lebron": {
+      "submitted": "2026-03-16T20:00:00+07:00",
+      "stats": {
+        "tasks_completed": 3,
+        "tasks_blocked": 0,
+        "lines_changed": 1850
+      },
+      "highlights": ["Implemented contract template system", "Fixed Layer 2 transcript review pipeline"],
+      "keep_doing": ["Following task card scope strictly", "Atomic commits"],
+      "improve": ["Error handling patterns could be more consistent", "Should draw diagrams before complex flows"],
+      "flow_suggestions": ["Coach task cards are good — keep this format"],
+      "blockers": []
+    },
+    "curry": {
+      "submitted": "2026-03-16T20:00:00+07:00",
+      "stats": {
+        "audits_completed": 3,
+        "bugs_found": 4,
+        "bugs_auto_fixed": 2,
+        "quality_score": 7
+      },
+      "highlights": ["Caught race condition in payment flow", "Validated contract template against spec"],
+      "keep_doing": ["Testing against frozen contract, not moving target"],
+      "improve": ["Need browser QA for UI tasks — unit tests miss visual bugs"],
+      "flow_suggestions": ["Request design spec in task card when UI is involved"],
+      "blockers": ["No design system to audit against"]
+    }
+  },
+  "ceo": {
+    "submitted": "2026-03-16T20:30:00+07:00",
+    "stats": {
+      "reframes_done": 4,
+      "tasks_reframed": 1,
+      "conflicts_resolved": 0,
+      "scope_decisions": 4
+    },
+    "commentary": "First formal retro. Team delivered well — 3/4 tasks completed. Quality score 7/10 — room to improve. Main takeaway: we need design audit pre-code and diagram-first architecture. These will be added to playbook v3.1.",
+    "trends": {
+      "velocity": "baseline",
+      "quality_score": 7,
+      "blocker_frequency": "none"
+    },
+    "product_insights": [
+      "Contract template system is the right product direction — reduces friction",
+      "Layer 2/3 pipeline stability improving, ready for increased volume"
+    ],
+    "action_items": [
+      {"owner": "coach", "action": "Add design requirements section to task card", "due": "W12"},
+      {"owner": "lebron", "action": "Diagram-first for complex tasks", "due": "W12"},
+      {"owner": "curry", "action": "Browser QA for UI tasks", "due": "W12"}
+    ]
+  }
+}

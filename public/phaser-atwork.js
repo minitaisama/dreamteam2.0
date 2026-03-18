@@ -547,14 +547,14 @@
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
         const v = ((x + y) % 3 === 0) ? TILE_IDX.GRASS_B : TILE_IDX.GRASS_A;
-        ground.putTileAt(v + 1, x, y);
+        ground.putTileAt(v, x, y);
       }
     }
 
     // Stone path to HQ door
     const pathX = 10;
-    for (let y = MAP_H - 1; y >= 8; y--) ground.putTileAt(TILE_IDX.PATH + 1, pathX, y);
-    for (let x = 8; x <= 12; x++) ground.putTileAt(TILE_IDX.PATH + 1, x, 8);
+    for (let y = MAP_H - 1; y >= 8; y--) ground.putTileAt(TILE_IDX.PATH, pathX, y);
+    for (let x = 8; x <= 12; x++) ground.putTileAt(TILE_IDX.PATH, x, 8);
 
     // HQ building (cutaway): walls + indoor floor + desks
     const bx0 = 7, bx1 = 13;
@@ -562,21 +562,21 @@
 
     // indoor floor
     for (let y = by0 + 2; y <= by1; y++) {
-      for (let x = bx0 + 1; x <= bx1 - 1; x++) ground.putTileAt(TILE_IDX.FLOOR + 1, x, y);
+      for (let x = bx0 + 1; x <= bx1 - 1; x++) ground.putTileAt(TILE_IDX.FLOOR, x, y);
     }
 
     // roof (top row only) as above layer for depth
-    for (let x = bx0; x <= bx1; x++) above.putTileAt(TILE_IDX.ROOF + 1, x, by0);
+    for (let x = bx0; x <= bx1; x++) above.putTileAt(TILE_IDX.ROOF, x, by0);
 
     // walls
     for (let y = by0 + 1; y <= by1; y++) {
-      world.putTileAt(TILE_IDX.WALL + 1, bx0, y);
-      world.putTileAt(TILE_IDX.WALL + 1, bx1, y);
+      world.putTileAt(TILE_IDX.WALL, bx0, y);
+      world.putTileAt(TILE_IDX.WALL, bx1, y);
     }
-    for (let x = bx0; x <= bx1; x++) world.putTileAt(TILE_IDX.WALL + 1, x, by0 + 1);
+    for (let x = bx0; x <= bx1; x++) world.putTileAt(TILE_IDX.WALL, x, by0 + 1);
 
     // door centered
-    world.putTileAt(TILE_IDX.DOOR + 1, pathX, by1);
+    world.putTileAt(TILE_IDX.DOOR, pathX, by1);
 
     // desks + computers inside
     const deskPositions = [
@@ -587,8 +587,8 @@
     ];
 
     for (const p of deskPositions) {
-      world.putTileAt(TILE_IDX.DESK + 1, p.x, p.y);
-      world.putTileAt(TILE_IDX.PC + 1, p.x + 1, p.y);
+      world.putTileAt(TILE_IDX.DESK, p.x, p.y);
+      world.putTileAt(TILE_IDX.PC, p.x + 1, p.y);
     }
 
     // Trees around
@@ -597,8 +597,8 @@
       { x: 17, y: 3 }, { x: 16, y: 5 }, { x: 18, y: 10 }
     ];
     for (const t of trees) {
-      world.putTileAt(TILE_IDX.TRUNK + 1, t.x, t.y);
-      above.putTileAt(TILE_IDX.CANOPY + 1, t.x, t.y - 1);
+      world.putTileAt(TILE_IDX.TRUNK, t.x, t.y);
+      above.putTileAt(TILE_IDX.CANOPY, t.x, t.y - 1);
     }
 
     ground.setDepth(0);
@@ -627,12 +627,13 @@
     }
 
     create() {
-      const overlay = document.getElementById('phaserOverlay');
-      if (overlay) overlay.style.display = 'none';
+      try {
+        const overlay = document.getElementById('phaserOverlay');
+        if (overlay) overlay.style.display = 'none';
 
-      buildTiles(this);
-      buildCharacters(this);
-      const layers = buildMapLayers(this);
+        buildTiles(this);
+        buildCharacters(this);
+        const layers = buildMapLayers(this);
 
       this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
       this.cameras.main.centerOn((MAP_W * TILE) / 2, (MAP_H * TILE) / 2);
@@ -650,7 +651,10 @@
         const spr = this.add.sprite(pos.x, pos.y, `dt-char-${k}`, 1);
         spr.setOrigin(0.5, 0.85);
         spr.setDepth(pos.y);
-        spr.setPipeline('TextureTintPipeline');
+        // NOTE: Don't force a pipeline by name here. On Phaser 3.80+ the old
+        // "TextureTintPipeline" key isn't registered, and throwing here will
+        // abort `create()` leaving the scene stuck in CREATING (black canvas).
+        // Default pipeline already handles tinting.
 
         // idle bob tween
         this.tweens.add({
@@ -716,6 +720,17 @@
 
       // subtle ambient shimmer on canopy layer
       layers.above.setAlpha(1);
+
+      } catch (err) {
+        // If anything throws during create(), Phaser leaves the scene stuck in
+        // CREATING (status=4) and the canvas stays black with no obvious error.
+        console.error('[phaser-atwork] create() failed', err);
+        const overlay = document.getElementById('phaserOverlay');
+        if (overlay) {
+          overlay.style.display = 'flex';
+          overlay.querySelector('.txt')?.replaceChildren(document.createTextNode('Pixel scene failed to load (see console).'));
+        }
+      }
     }
 
     applyLive(live) {

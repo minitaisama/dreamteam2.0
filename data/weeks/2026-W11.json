@@ -6,8 +6,7 @@
       "stats": {
         "tasks_dispatched": 4,
         "tasks_completed": 3,
-        "tasks_blocked": 1,
-        "avg_turnaround": "18m"
+        "tasks_blocked": 1
       },
       "highlights": ["Coordinated tu-vi Layer 2 + 3 update end-to-end", "Improved task card format with clearer acceptance criteria"],
       "keep_doing": ["Tiny task card approach reducing scope drift"],
@@ -20,8 +19,7 @@
       "stats": {
         "tasks_completed": 3,
         "tasks_blocked": 0,
-        "total_lines_changed": 1850,
-        "avg_task_duration": "14m"
+        "lines_changed": 1850
       },
       "highlights": ["Implemented contract template system", "Fixed Layer 2 transcript review pipeline"],
       "keep_doing": ["Following task card scope strictly", "Atomic commits"],
@@ -46,12 +44,22 @@
   },
   "ceo": {
     "submitted": "2026-03-16T20:30:00+07:00",
-    "commentary": "First formal retro. Team delivered well — 3/4 tasks completed. Quality score 7/10 — room to improve. Main takeaway: we need design audit pre-code and diagram-first architecture. These will be added to playbook v3.",
+    "stats": {
+      "reframes_done": 4,
+      "tasks_reframed": 1,
+      "conflicts_resolved": 0,
+      "scope_decisions": 4
+    },
+    "commentary": "First formal retro. Team delivered well — 3/4 tasks completed. Quality score 7/10 — room to improve. Main takeaway: we need design audit pre-code and diagram-first architecture. These will be added to playbook v3.1.",
     "trends": {
       "velocity": "baseline",
       "quality_score": 7,
       "blocker_frequency": "none"
     },
+    "product_insights": [
+      "Contract template system is the right product direction — reduces friction",
+      "Layer 2/3 pipeline stability improving, ready for increased volume"
+    ],
     "action_items": [
       {"owner": "coach", "action": "Add design requirements section to task card", "due": "W12"},
       {"owner": "lebron", "action": "Diagram-first for complex tasks", "due": "W12"},

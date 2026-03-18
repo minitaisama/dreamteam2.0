@@ -146,6 +146,12 @@
     .badge-coach { background: rgba(59,130,246,0.15); color: var(--blue); }
     .badge-lebron { background: rgba(34,197,94,0.15); color: var(--green); }
     .badge-curry { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .badge-ceo { background: rgba(245,158,11,0.15); color: var(--ceo); }
+    .agent-card.ceo-card {
+      border-color: rgba(245,158,11,0.25);
+      background: linear-gradient(135deg, var(--surface), rgba(245,158,11,0.03));
+    }
+    .agent-card.ceo-card:hover { border-color: var(--ceo); }
 
     .agent-stats { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
     .agent-stat { font-size: 0.8rem; }
@@ -234,12 +240,6 @@
       </div>
     </div>
 
-    <!-- CEO Summary -->
-    <div class="ceo-summary" id="ceoSummary">
-      <div class="label">👤 CEO Commentary</div>
-      <div class="commentary" id="ceoCommentary">Loading...</div>
-    </div>
-
     <!-- Stats -->
     <div class="stats-grid" id="statsGrid"></div>
 
@@ -281,7 +281,7 @@
         const index = await res.json();
         WEEKS.push(...index.weeks.sort().reverse());
         if (WEEKS.length === 0) {
-          document.getElementById('ceoCommentary').textContent = 'No retrospective data yet.';
+          document.getElementById('statsGrid').textContent = 'No retrospective data yet.';
           return;
         }
         currentWeekIndex = 0;
@@ -289,7 +289,7 @@
         renderCharts();
       } catch (e) {
         console.error('loadWeeks error:', e);
-        document.getElementById('ceoCommentary').textContent = 'Failed to load data: ' + e.message;
+        document.getElementById('statsGrid').textContent = 'Failed to load data: ' + e.message;
       }
     }
 
@@ -318,20 +318,23 @@
       document.getElementById('nextWeek').disabled = currentWeekIndex === WEEKS.length - 1;
 
       // CEO
-      document.getElementById('ceoCommentary').textContent = data.ceo.commentary || 'No commentary.';
+      const ceo = data.ceo;
+      const ceoTrends = ceo.trends || {};
 
-      // Stats
+      // Stats — include all 4 agents
       const agents = data.agents;
+      const allAgentsCount = Object.keys(agents).length + 1; // +1 for CEO
       const totalTasks = Object.values(agents).reduce((s, a) => s + (a.stats.tasks_completed || a.stats.audits_completed || 0), 0);
       const totalBlocked = Object.values(agents).reduce((s, a) => s + (a.stats.tasks_blocked || 0), 0);
-      const qualityScore = data.ceo.trends?.quality_score || agents.curry?.stats?.quality_score || '-';
-      const velocity = data.ceo.trends?.velocity || '-';
+      const qualityScore = ceoTrends.quality_score || agents.curry?.stats?.quality_score || '-';
+      const velocity = ceoTrends.velocity || '-';
+      const actionItemsCount = (ceo.action_items || []).length;
 
       document.getElementById('statsGrid').innerHTML = `
         <div class="stat-card">
           <div class="stat-label">Tasks Done</div>
           <div class="stat-value">${totalTasks}</div>
-          <div class="stat-change neutral">across ${Object.keys(agents).length} agents</div>
+          <div class="stat-change neutral">across 3 agents</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Blocked</div>
@@ -345,33 +348,51 @@
           <div class="stat-label">Velocity</div>
           <div class="stat-value" style="font-size:1.25rem">${velocity}</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">Action Items</div>
+          <div class="stat-value">${actionItemsCount}</div>
+          <div class="stat-change neutral">from CEO review</div>
+        </div>
       `;
 
-      // Agent cards
+      // Agent cards — CEO first, then PM/Dev/QA
       const roleMap = { coach: 'PM', lebron: 'Dev', curry: 'QA' };
       const badgeMap = { coach: 'badge-coach', lebron: 'badge-lebron', curry: 'badge-curry' };
-      
-      document.getElementById('agentsGrid').innerHTML = Object.entries(agents).map(([key, agent]) => {
-        const statsHtml = Object.entries(agent.stats).map(([k, v]) => 
+
+      function buildAgentCard(name, badge, role, agent, extraClass) {
+        const statsHtml = agent.stats ? Object.entries(agent.stats).map(([k, v]) =>
           `<div class="agent-stat"><span class="num">${v}</span> <span class="lbl">${k.replace(/_/g, ' ')}</span></div>`
-        ).join('');
-        
+        ).join('') : '';
+        const cls = extraClass ? ` ${extraClass}` : '';
+
         return `
-          <div class="agent-card">
+          <div class="agent-card${cls}">
             <div class="agent-header">
               <div>
-                <div class="agent-name">${key.charAt(0).toUpperCase() + key.slice(1)} <span class="agent-badge ${badgeMap[key]}">${roleMap[key]}</span></div>
+                <div class="agent-name">${name} <span class="agent-badge ${badge}">${role}</span></div>
               </div>
             </div>
-            <div class="agent-stats">${statsHtml}</div>
+            ${statsHtml ? `<div class="agent-stats">${statsHtml}</div>` : ''}
+            ${agent.commentary ? `<div class="agent-section"><div class="agent-section-title">Commentary</div><p style="font-size:0.85rem;color:var(--text2)">${agent.commentary}</p></div>` : ''}
             ${agent.highlights?.length ? `<div class="agent-section"><div class="agent-section-title">Highlights</div><ul>${agent.highlights.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
             ${agent.keep_doing?.length ? `<div class="agent-section"><div class="agent-section-title">Keep Doing</div><ul>${agent.keep_doing.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
             ${agent.improve?.length ? `<div class="agent-section"><div class="agent-section-title">Improve</div><ul>${agent.improve.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
             ${agent.flow_suggestions?.length ? `<div class="agent-section suggestions"><div class="agent-section-title">Flow Suggestions</div><ul>${agent.flow_suggestions.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
             ${agent.blockers?.length ? `<div class="agent-section"><div class="agent-section-title">Blockers</div><ul>${agent.blockers.map(h=>`<li style="color:var(--yellow)">${h}</li>`).join('')}</ul></div>` : ''}
+            ${agent.product_insights?.length ? `<div class="agent-section"><div class="agent-section-title">Product Insights</div><ul>${agent.product_insights.map(h=>`<li>${h}</li>`).join('')}</ul></div>` : ''}
           </div>
         `;
-      }).join('');
+      }
+
+      // Build CEO card
+      const ceoCard = buildAgentCard('MiniSama', 'badge-ceo', 'CEO', ceo, 'ceo-card');
+
+      // Build execution agent cards
+      const execCards = Object.entries(agents).map(([key, agent]) =>
+        buildAgentCard(key.charAt(0).toUpperCase() + key.slice(1), badgeMap[key], roleMap[key], agent, '')
+      ).join('');
+
+      document.getElementById('agentsGrid').innerHTML = ceoCard + execCards;
 
       // Action items
       const actions = data.ceo.action_items || [];

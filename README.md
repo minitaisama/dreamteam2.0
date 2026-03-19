@@ -1,6 +1,37 @@
-# Dream Team v3.1
+# Dream Team v3.2
 
-> A 4-agent software factory: CEO rethinks the product, PM locks the spec, Dev builds it, QA ships it. Multi-agent parallel execution, not single-session slash commands.
+> A 5-role software factory: CEO reframes the problem, Coach locks scope and UX direction, Lebron builds backend, Bronny builds frontend, Curry validates and pressure-tests quality. Multi-agent parallel execution, not single-session slash commands.
+
+---
+
+## What's improved from v2.0 → v3.1 → v3.2
+
+### v2.0
+- Established the core multi-agent idea: PM → Dev → QA instead of one overloaded generalist session
+- Introduced tiny task cards, artifact-first handoffs, and release-gate thinking
+- Proved the value of structured roles over slash-command chaos
+
+### v3.1
+- Added **CEO / MiniSama** as the product-reframing layer before PM
+- Formalized the 4-agent pipeline: **CEO → PM → Dev → QA**
+- Added stronger quality rules: design audit, mode selection, handoff contracts, retros, and stricter runbook discipline
+
+### v3.2
+- Split the old Dev lane into **specialized execution lanes**:
+  - **Lebron** = Backend Developer (`be-agent`)
+  - **Bronny** = Frontend Developer (`fe-agent`)
+- Upgraded **Coach** from PM-only to **PM + UI Design direction**
+- Made **CEO runbook discipline explicit**: CEO must not jump into coding out of urgency
+- Added **Root-cause Debug mode** for hard bugs / scope-out work
+- Made **Curry mandatory early** for bug root-cause work, not just end-stage QA
+- Clarified **parallel split by specialty**:
+  - Coach = direction / scope / hypothesis control
+  - Curry = reproduction / evidence / validation
+
+In short:
+- **v2.0** = structured team idea
+- **v3.1** = CEO-led operating system
+- **v3.2** = specialization + better debugging workflow
 
 ---
 
@@ -24,10 +55,11 @@ Inspired by [gstack](https://github.com/garrytan/gstack) — we borrowed the "st
 
 | Role | Agent | What they do |
 |------|-------|-------------|
-| **CEO** | MiniSama | Rethink the problem. Find the 10-star product hiding in the request. 4 scope modes: Expansion, Selective, Hold, Reduction. |
-| **PM** | Coach | Lock the spec. Freeze a tiny task card. Dispatch work. Own scope, DoD, and handoff quality. |
-| **Dev** | Lebron | Build it. Diagram-first for complex tasks. Stay strictly inside scope. YAGNI. |
-| **QA** | Curry | Verify it. Test against the frozen contract, not a moving target. Design audit for UI. Severity-rated issues. |
+| **CEO** | MiniSama | Rethink the problem. Find the 10-star product hiding in the request. Set scope mode and protect the runbook. |
+| **PM + UI Design** | Coach | Lock the spec. Freeze a tiny task card. Set UX/UI direction. Dispatch work and control hypotheses. |
+| **Backend Developer** | Lebron | Build backend/API/auth/data changes. Produce integration contracts when FE depends on BE. |
+| **Frontend Developer** | Bronny | Build UI/client states and frontend integration from frozen task cards and contracts. |
+| **QA** | Curry | Reproduce, validate, and verify. Test against the frozen contract, not a moving target. Design audit for UI. |
 
 ---
 
@@ -109,6 +141,7 @@ One feature. Four agents. Each with the right cognitive mode. That's the differe
 |------|------|-----|---------|--------------|---------|
 | **Solo** | <30 min, clear scope, low risk | Skip | No | No | Optional |
 | **Build** | Normal dev task | Yes | If PM requires | If UI | Yes |
+| **Root-cause Debug** | Hard bug, unclear failure path, scope-out needed | Yes | Investigation-driven | If UI | Mandatory early |
 | **Release-critical** | Auth, payment, core flow | Yes | PM requires | If UI | `ship` / `ship_with_risk` / `hold` |
 
 ---
@@ -140,16 +173,17 @@ Tracks: velocity, quality scores, blockers, action items — all visualized with
 
 ```
 agents/
-├── pm-agent/          # Coach — PM/orchestration
-├── code-agent/        # Lebron — implementation
-└── qa-agent/          # Curry — QA/validation
+├── pm-agent/          # Coach — PM + UI design direction
+├── be-agent/          # Lebron — backend execution
+├── fe-agent/          # Bronny — frontend execution
+└── qa-agent/          # Curry — QA / reproduction / validation
 data/
 └── weeks/             # Retro data (JSON)
 index.html             # Retro dashboard
-PLAYBOOK.md            # Full runbook (v3.1)
+PLAYBOOK.md            # Full runbook (v3.2)
 ```
 
-> **Note:** CEO (MiniSama) is the orchestrating agent that runs outside this repo — it lives in the OpenClaw workspace and coordinates the pipeline. The `agents/` directory contains the configs for the 3 execution agents (PM, Dev, QA) that get spawned by the CEO.
+> **Note:** CEO (MiniSama) is the orchestrating agent that runs outside this repo — it lives in the OpenClaw workspace and coordinates the pipeline. The `agents/` directory contains the execution lanes Coach dispatches into: PM, BE, FE, and QA.
 
 ### Key files
 

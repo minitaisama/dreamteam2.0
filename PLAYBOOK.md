@@ -1,22 +1,23 @@
-# Dream Team Playbook v3.1
+# Dream Team Playbook v3.2
 
 ## Mục đích
-Playbook chính thức cho Dream Team v3.1 — 4 agents.
-Dùng để chuẩn hóa cách MiniSama, Coach, Lebron, và Curry phối hợp.
+Playbook chính thức cho Dream Team v3.2.
+Chuẩn hóa cách MiniSama, Coach, Lebron, Bronny, và Curry phối hợp để vừa nhanh vừa đúng vai.
 
 ## Team
 
 | Role | Agent | Focus |
 |------|-------|-------|
 | **CEO** | `mini-taisama` | Vision, reframe, retro, conflict resolution |
-| **PM** | `coach` (pm-agent) | Spec, workflow, DoD, dispatch |
-| **Dev** | `lebron` (code-agent) | Implementation |
-| **QA** | `curry` (qa-agent) | Quality, design audit, regression |
+| **PM + UI Design** | `coach` (`pm-agent`) | Scope, spec, workflow, DoD, UX/UI direction, dispatch |
+| **Backend Developer** | `lebron` (`be-agent`) | Backend implementation, contracts, auth/data/API changes |
+| **Frontend Developer** | `bronny` (`fe-agent`) | UI implementation, states, client integration |
+| **QA** | `curry` (`qa-agent`) | Reproduction, validation, design audit, regression |
 
 ## Pipeline
 
-```
-Taisama → MiniSama (CEO) → Coach (PM) → Lebron (Dev) → Curry (QA) → Coach → Taisama
+```text
+Taisama → MiniSama (CEO) → Coach (PM + UI Design) → Lebron (BE) / Bronny (FE) → Curry (QA) → Coach → Taisama
 ```
 
 ---
@@ -26,93 +27,55 @@ Taisama → MiniSama (CEO) → Coach (PM) → Lebron (Dev) → Curry (QA) → Co
 ### Responsibilities
 1. Product reframe — không nhận request literal
 2. 10-star vision — tìm version feels inevitable
-3. Scope direction — 4 modes
+3. Scope direction — chọn mode phù hợp
 4. Quality bar ownership
 5. Retro aggregation + CEO commentary
-6. Conflict resolution (escalated từ Coach)
+6. Conflict resolution khi Coach escalates
 7. Decision log → `memory/process/ceo.md`
 
-### Decision Authority
-
-| Decision | Authority |
-|----------|-----------|
-| Product direction | CEO recommend → **Taisama decides** |
-| Scope mode | **Taisama chooses** từ CEO options |
-| Agent disagreement | Coach decides → escalate CEO if stuck |
-| Ship/hold | Curry recommend → Coach report → **Taisama decides** |
-| Playbook changes | CEO propose → team review → **Taisama approves** |
-| Retro action items | CEO assign → agents execute |
+### CEO Execution Rules
+- **Không nhảy vào coding vì nóng vội.** CEO phải obey runbook.
+- **Không skip Coach task card freeze.**
+- **Không coi Curry là bước cuối-only** khi task là debugging/root-cause.
+- Dừng ở direction/orchestration; để PM/BE/FE/QA làm đúng vai.
 
 ### When Participate vs Delegate
-
 | Trigger | Action |
 |---------|--------|
-| Feature mới, product decision | **Participate** |
-| Scope ambiguous, "nên build gì?" | **Participate** |
-| Release-critical task | **Participate** — review plan |
-| Agent escalation | **Participate** — arbitrate |
-| Weekly retro | **Participate** — aggregate |
-| Bug fix, refactor, doc update | **Delegate** → Coach |
-| Taisama nói "skip CEO" | **Delegate** → Coach |
-
-### CEO Review Flow
-1. Không nhận request literal. Hỏi: "Đây thực ra giải quyết vấn đề gì?"
-2. Reframe thành 10-star version
-3. 4 scope modes (Taisama chọn):
-   - **Expansion** — dream big, recommend enthusiastically
-   - **Selective Expansion** — hold baseline, cherry-pick
-   - **Hold Scope** — maximum rigor, optimize plan hiện tại
-   - **Reduction** — tìm MVP, cắt noise
-4. Output CEO direction → pass cho Coach
+| Feature mới, product decision | Participate |
+| Scope ambiguous, “nên build gì?” | Participate |
+| Release-critical task | Participate — review plan |
+| Agent escalation | Participate — arbitrate |
+| Weekly retro | Participate |
+| Bug fix / refactor / doc update | Delegate → Coach |
+| Taisama nói “skip CEO” | Delegate → Coach |
 
 ### CEO → Coach Handoff
-
-```
+```md
 ## CEO Direction
 - Request gốc: [...]
 - Reframe: [...]
-- Scope mode: [expansion|selective|hold|reduction]
+- Scope mode: [expansion|selective|hold|reduction|debug]
 - Recommended version: [...]
 - Scope: [in] / Non-goals: [out]
 - Risk: [...]
 - Reasoning: [...]
 ```
 
-### CEO Decision Log
-Persist to `memory/process/ceo.md`:
-```
-## [Date] — [Task]
-- Request: ...
-- Reframe: ...
-- Scope mode: ...
-- Decision: ...
-- Reasoning: ...
-- Outcome: ... (fill after completion)
-```
-
-### CEO Anti-Patterns
-
-| Anti-pattern | Fix |
-|-------------|-----|
-| Rubber-stamp CEO | Mandatory reframe cho feature tasks |
-| Analysis paralysis | Time-box CEO review: 5 min max |
-| Over-vision | Selective expansion, defer items |
-| Micro-management | Stop at direction, let PM/Dev own execution |
-
 ---
 
-## PM (Coach)
+## Coach (PM + UI Design)
 
 ### Responsibilities
 - Nhận CEO direction → freeze task card
 - Own scope, spec, workflow, DoD, dispatch
-- Include design requirements nếu task có UI
-- Review Lebron output trước khi gửi Curry
-- Synthesize kết quả → report Taisama
+- Own UX/UI direction: interaction states, design constraints, visual system defaults
+- Dispatch đúng lane: Lebron cho BE, Bronny cho FE, Curry cho QA/repro/verify
+- Review outputs trước khi gửi Curry hoặc báo CEO/Taisama
+- Synthesize kết quả cuối
 
 ### Task Card Format
-
-```
+```md
 ## Task Card — W##-T#
 
 ### Core
@@ -130,7 +93,7 @@ Persist to `memory/process/ceo.md`:
 ### Design (nếu có UI)
 - Interaction states: [loading/empty/error/success]
 - Responsive: [breakpoints if specific]
-- Design system: [reference or "none"]
+- Design system: [reference/default constraints]
 
 ### Architecture (nếu complex)
 - Diagram required: yes|no
@@ -141,92 +104,98 @@ Persist to `memory/process/ceo.md`:
 - Risk focus: [1 line]
 ```
 
-### Diagram Rule (Soft)
-- Coach quyết khi cần diagram, không auto-trigger
-- ASCII default, output riêng (link vào task card)
-- Diagram types: data flow, state machine, component, sequence
-- Coach review diagram trước khi Lebron code
-
-### Scope Change
-Taisama đổi yêu cầu mid-task: pause → update task card → re-freeze → re-dispatch.
-
-### Curry `hold` Action
-Curry says hold → Coach report Taisama với Curry evidence + recommendation → Taisama decides.
-
-### Escalation
-Coach stuck >15m → escalate to CEO (MiniSama).
+### Coach Guardrails
+- Không lao quá sâu vào reproduce/debug nếu như vậy làm mất vai trò điều phối.
+- Khi bug khó, Coach giữ **hypothesis control + task card quality**, không ôm luôn toàn bộ investigation.
+- Nếu design task: convert taste/preferences của Taisama thành constraints rõ trong task card.
 
 ---
 
-## Dev (Lebron)
+## Lebron (Backend Developer)
+
+### Responsibilities
+- Own backend scope: API, schema, jobs, auth, data flow, contracts
+- Với thay đổi có FE phụ thuộc: produce/update integration doc rõ cho Bronny
 
 ### Rules
-- Diagram-first cho task Coach yêu cầu (ASCII, output riêng)
+- Diagram-first khi Coach yêu cầu
 - Follow task card scope, không gold-plate
 - Không vừa code vừa đổi DoD
 - Với contract changes: pinned API contract test + representative fixture
-- YAGNI — không optimize "just in case"
-
-### Anti-Patterns
-
-| Anti-pattern | Fix |
-|-------------|-----|
-| Gold-plating | Follow task card scope, Curry check adherence |
-| Premature optimization | Optimize khi có metric chứng minh cần |
+- YAGNI — không optimize “just in case”
 
 ---
 
-## QA (Curry)
+## Bronny (Frontend Developer)
+
+### Responsibilities
+- Own frontend scope: UI implementation, state wiring, loading/empty/error states, client integration
+- Build từ frozen task card + integration contract
+
+### Rules
+- Không tự đoán API nếu contract chưa rõ
+- Follow Coach UX/UI direction; mismatch thì escalate
+- Không tự mở rộng scope product
+- Preserve design intent nhưng vẫn pragmatic implementation
+
+---
+
+## Curry (QA)
+
+### Responsibilities
+- Reproduce bugs độc lập
+- Capture symptom matrix + failure sequence
+- Validate root cause hypothesis
+- Verify fixes + check regressions
+- Run design audit khi task có UI
 
 ### Standard QA
 - Validate against frozen task card, not current code
-- Phân loại issues: parser / scorer / corpus-quality / UI / logic
+- Phân loại issues: parser / scorer / corpus-quality / UI / logic / protocol
 - Severity per issue: `blocker|major|minor|cosmetic`
 - Scope adherence check: changed files match task card
 - No silent regressions: regression trong scope = mandatory P1
 
-### Design Audit (cho task có UI)
-
+### Design Audit
 7 dimensions, rate 0-10:
+1. Information Architecture
+2. Interaction States
+3. User Journey
+4. AI Slop Risk
+5. Design System + Component Reuse
+6. Responsive/A11y
+7. Unresolved Decisions
 
-| # | Dimension | Threshold |
-|---|-----------|-----------|
-| 1 | Information Architecture | ≥7 |
-| 2 | Interaction States | ≥7 |
-| 3 | User Journey | ≥7 |
-| 4 | AI Slop Risk | ≥6 |
-| 5 | Design System + Component Reuse | ≥6 |
-| 6 | Responsive/A11y | ≥6 |
-| 7 | Unresolved Decisions | ≥8 |
-
-Core dimensions (1-3): must pass ≥7. Supporting (4-6): ≥6. Unresolved (7): ≥8.
-Overall < 7 → recommend rework.
-
-**Skip khi:** backend-only, internal tool, bug fix.
-
-### Browser QA
-- Dùng OpenClaw `browser` tool: navigate → screenshot → analyze → click through
-- Cho release-critical: interaction flow test, không chỉ static screenshot
-
-### Auto-fix Policy
-1. **Report only:** Structural issues (IA, user journey) → Curry không fix
-2. **Suggest + Lebron implement:** Visual polish, spacing, color → Curry describe, Lebron execute
-3. **Auto-fix OK:** Typo, obvious copy, missing alt text → Curry fix + log change
-
-### QA per Mode
-- Solo: optional
-- Build: yes, standard
-- Release-critical: yes, strict
+Thresholds:
+- Core (1-3) ≥ 7
+- Supporting (4-6) ≥ 6
+- Unresolved (7) ≥ 8
+- Overall < 7 → recommend rework
 
 ---
 
 ## Operating Modes
 
-| Mode | Trigger | CEO | Diagram | Design audit | Curry gate |
-|------|---------|-----|---------|--------------|------------|
-| Solo | Task <30m, clear, low blast | Skip | No | No | Optional |
-| Build | Normal dev task | Yes | If Coach requires | If UI | Yes |
-| Release-critical | Auth/payment/core-flow | Yes | Coach requires | If UI | `ship|ship_with_risk|hold` |
+| Mode | Trigger | CEO | Coach | BE/FE | Curry |
+|------|---------|-----|-------|-------|-------|
+| **Solo** | Task <30m, clear, low blast | Optional | Direct handle | Optional | Optional |
+| **Build** | Normal dev task | Yes | Freeze card + dispatch | Implement | Verify |
+| **Release-critical** | Auth/payment/core-flow | Yes | Strict gatekeeping | Implement | `ship|ship_with_risk|hold` |
+| **Root-cause Debug** | Bug khó, unclear root cause, scope-out needed | Yes | Freeze mini investigation card | Fix by lane after evidence | **Mandatory early** |
+
+### Root-cause Debug Rule
+Khi cần đào sâu bug root cause hoặc scope task card theo đúng hướng:
+1. Coach viết **mini investigation card**
+2. Curry vào **sớm** để reproduce độc lập + xác nhận failure path
+3. Coach update/freeze task card theo evidence
+4. Lebron/Bronny sửa theo lane
+5. Curry verify lại
+6. Coach synthesize cho CEO/Taisama
+
+### Parallel Split Rule (Coach + Curry)
+Coach và Curry **được chạy song song** để tăng tốc, nhưng không làm cùng một việc y hệt nhau:
+- **Coach** = direction / scope / hypothesis control / coordination
+- **Curry** = reproduction / evidence / validation
 
 ---
 
@@ -234,68 +203,36 @@ Overall < 7 → recommend rework.
 
 | From → To | Input | Output |
 |-----------|-------|--------|
-| CEO → PM | Taisama request | CEO direction |
-| PM → Dev | Task card (full) | Diagram + implementation |
-| Dev → QA | Task card + changed files + preview_url | QA report |
-| QA → PM | Task card (contract ref) | Report + severity + recommendation |
-| PM → Taisama | Lebron output + Curry report | Result + risk + next action |
+| CEO → Coach | Taisama request | CEO direction |
+| Coach → Lebron | Backend task card / contract work | Backend implementation + integration doc |
+| Coach → Bronny | Frontend task card + integration contract | Frontend implementation + preview |
+| Coach → Curry | Task card / investigation card | Repro evidence / QA report |
+| Lebron → Bronny | Integration doc / API contract | FE-ready contract |
+| Dev → Curry | Task card + changed files + preview_url | QA report |
+| Curry → Coach | Evidence / report / recommendation | Synthesized decision input |
+| Coach → Taisama | Dev output + Curry report | Result + risk + next action |
 
 ---
 
-## Anti-Patterns (Team-wide)
+## Team-wide Anti-Patterns
 
-| Anti-pattern | Symptom | Fix |
-|-------------|---------|-----|
-| Literal ticket taking | Implement đúng literal, không reframe | CEO reframe |
-| Test against moving target | QA validate theo code đang đổi | Frozen task card contract |
-| Gold-plating | Thêm features không trong scope | Scope freeze + Curry check |
-| AI slop UI | Gradient hero, icon grid, generic SaaS | Design audit dimension 4 |
-| Premature optimization | Cache/refactor/abstract "just in case" | YAGNI |
-| Full history forwarding | Gửi toàn bộ chat history | Artifact-first, context tối thiểu |
+| Anti-pattern | Fix |
+|-------------|-----|
+| Literal ticket taking | CEO reframe |
+| Test against moving target | Frozen task card contract |
+| Gold-plating | Scope freeze + Curry check |
+| AI slop UI | Explicit design constraints + Curry audit |
+| Premature optimization | YAGNI |
+| Full history forwarding | Artifact-first, context tối thiểu |
+| CEO jumping into code | Enforce runbook / Coach owns dispatch |
+| Calling Curry too late on hard bugs | Use Root-cause Debug mode |
 
 ---
 
 ## Reporting
-
 - Update chỉ khi state đổi: `started` | `blocked` | `risk found` | `finished`
 - Report về Taisama: ngắn, trực diện
-- Format: result + risk + next action (nếu có)
-
----
-
-## Retrospective
-
-### Weekly Flow (Sunday 20:00, cron)
-1. MiniSama spawn 3 isolated sessions → each agent submits retro JSON
-2. MiniSama aggregates + writes CEO commentary
-3. Write week JSON to `dreamteam2.0/data/weeks/`
-4. Git commit + push → Vercel auto-deploy
-5. Ping Taisama with summary + link
-
-### Agent Retro JSON
-```json
-{
-  "week": "2026-W##",
-  "agent": "coach|lebron|curry",
-  "submitted": "ISO-8601",
-  "stats": { ... },
-  "highlights": ["..."],
-  "keep_doing": ["..."],
-  "improve": ["..."],
-  "flow_suggestions": ["..."],
-  "blockers": ["..."],
-  "learnings": ["..."],
-  "context": "free text"
-}
-```
-
-### Additional Triggers
-- Sau release-critical: immediate retro
-- Taisama manual request
-
-### Dashboard
-- **URL:** https://dreamteam20.vercel.app
-- **Repo:** minitaisama/dreamteam2.0
+- Format: result + risk + next action
 
 ---
 
@@ -303,12 +240,10 @@ Overall < 7 → recommend rework.
 
 | File | Content |
 |------|---------|
-| `docs/playbooks/dream-team.md` | Stable rules (this file) |
-| `memory/process/dream-team.md` | Living lessons |
-| `memory/process/ceo.md` | CEO decision log |
-| `memory/process/coach.md` | PM heuristics |
-| `memory/process/lebron.md` | Dev heuristics |
-| `memory/process/curry.md` | QA heuristics |
+| `PLAYBOOK.md` | Stable rules |
+| `data/` | Weekly retro artifacts, dashboards, ADRs |
+| `agents/` | Agent-facing role materials |
 
 ## Promote Policy
-Lesson lặp lại + ổn định → promote vào playbook. Lesson chỉ cho 1 role → chuyển sang role memory.
+Lesson lặp lại + ổn định → promote vào playbook.
+Lesson chỉ cho 1 role → chuyển sang role memory/reference riêng.

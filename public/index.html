@@ -16,6 +16,35 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spin { animation: spin 1s linear infinite; }
+
+  /* Pulsing red dot for overdue items */
+  @keyframes pulse-red { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,68,68,0.7); } 50% { opacity: .8; box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+  .pulse-red-dot { animation: pulse-red 1.5s ease-in-out infinite; }
+
+  /* Health score circle */
+  .health-circle { position: relative; width: 56px; height: 56px; }
+  .health-circle svg { transform: rotate(-90deg); }
+  .health-circle .score-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+
+  /* Feedback timeline */
+  .feedback-timeline { position: relative; padding-left: 24px; }
+  .feedback-timeline::before { content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 2px; background: rgba(73,68,84,0.4); }
+  .feedback-dot { position: absolute; left: -20px; top: 6px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #33343b; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 12px; background: #282a30; border: 1px solid rgba(73,68,84,0.3); color: #e2e2eb; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; pointer-events: auto; }
+
+  /* Improvement velocity bars */
+  .velocity-bar { transition: width 0.6s ease; }
+
+  /* Lesson filter buttons */
+  .lesson-filter-btn { padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(73,68,84,0.3); color: #cbc3d7; background: transparent; }
+  .lesson-filter-btn.active { background: rgba(208,188,255,0.15); color: #d0bcff; border-color: rgba(208,188,255,0.3); }
+  .lesson-filter-btn:hover { background: rgba(208,188,255,0.08); }
+
+  /* Feedback matrix cell */
+  .matrix-cell { display: flex; align-items: center; justify-content: center; min-height: 36px; font-size: 13px; font-weight: 700; border-radius: 6px; transition: background 0.2s; }
 </style>
 <script id="tailwind-config">
   tailwind.config = {
@@ -71,6 +100,9 @@
   </div>
 </div>
 
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
 <!-- Top Navigation Bar -->
 <header class="fixed top-0 w-full z-50 bg-[#1e1f26]/60 backdrop-blur-xl shadow-[0_0_20px_rgba(208,188,255,0.1)]">
   <div class="flex justify-between items-center px-6 py-3">
@@ -84,6 +116,17 @@
       </div>
     </div>
     <div class="flex items-center gap-4">
+      <!-- Quick Actions (#15) -->
+      <div class="hidden sm:flex items-center gap-2">
+        <button onclick="showToast('📋 Coming soon — spawn Lebron via Telegram')" class="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors">
+          <span class="material-symbols-outlined text-sm">assignment</span>
+          <span class="hidden lg:inline">Assign Task</span>
+        </button>
+        <button onclick="showToast('✅ Coming soon — mark via retro')" class="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 transition-colors">
+          <span class="material-symbols-outlined text-sm">check_circle</span>
+          <span class="hidden lg:inline">Resolve Item</span>
+        </button>
+      </div>
       <!-- Date Picker -->
       <div class="flex items-center bg-surface-container-lowest px-3 py-1.5 rounded-lg border border-outline-variant/20">
         <span class="material-symbols-outlined text-sm mr-2 text-violet-400">calendar_today</span>
@@ -144,11 +187,34 @@
 <!-- Main Content Area -->
 <main class="md:ml-64 pt-20 pb-12 px-6">
 
+  <!-- ============ #11: ALERTS SECTION (top of dashboard) ============ -->
+  <section id="alerts-section" class="hidden mb-6">
+    <div id="alerts-list" class="space-y-2"></div>
+  </section>
+
   <!-- ============ TAB: HÔM NAY ============ -->
   <div id="view-today">
 
     <!-- KPI Scoreboard -->
-    <section id="kpi-section" class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10"></section>
+    <section id="kpi-section" class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6"></section>
+
+    <!-- #8: Resolution SLA -->
+    <section id="sla-section" class="mb-8">
+      <h2 class="text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-tertiary"></span>
+        Resolution SLA
+      </h2>
+      <div id="sla-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    </section>
+
+    <!-- #2: Active Tasks Section -->
+    <section id="active-tasks-section" class="mb-8">
+      <h2 class="text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-secondary"></span>
+        📋 Tasks đang chạy
+      </h2>
+      <div id="active-tasks-list"></div>
+    </section>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -184,47 +250,22 @@
         </div>
       </div>
 
-      <!-- Right Sidebar: Feedback Network + Retro -->
+      <!-- Right Sidebar: Feedback Feed + Retro -->
       <div class="lg:col-span-4 space-y-6">
 
-        <!-- Feedback Loop Visualization -->
+        <!-- #4: Feedback Feed (replaces static diagram) -->
         <div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10">
-          <h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-6">Mạng lưới giao tiếp</h3>
-          <div class="relative h-48 flex items-center justify-center">
-            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-primary flex items-center justify-center z-10 shadow-[0_0_15px_rgba(208,188,255,0.4)]">
-              <span class="text-[10px] font-black">C</span>
-            </div>
-            <div class="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-secondary flex items-center justify-center z-10 shadow-[0_0_15px_rgba(74,225,118,0.4)]">
-              <span class="text-[10px] font-black">L</span>
-            </div>
-            <div class="absolute bottom-0 left-0 w-10 h-10 rounded-full bg-tertiary flex items-center justify-center z-10 shadow-[0_0_15px_rgba(255,185,95,0.4)]">
-              <span class="text-[10px] font-black">B</span>
-            </div>
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-surface-bright border border-outline-variant/30 flex items-center justify-center z-10">
-              <span class="text-[8px] font-black">Cu</span>
-            </div>
-            <svg class="absolute inset-0 w-full h-full pointer-events-none" viewbox="0 0 200 200">
-              <path class="text-outline-variant/30" d="M100 20 L180 180" fill="none" stroke="currentColor" stroke-width="1"></path>
-              <path class="text-outline-variant/30" d="M100 20 L20 180" fill="none" stroke="currentColor" stroke-width="1"></path>
-              <path class="text-primary" d="M20 180 L180 180" fill="none" stroke="currentColor" stroke-dasharray="4 2" stroke-width="2"></path>
-              <path class="text-secondary" d="M100 20 L100 100" fill="none" stroke="currentColor" stroke-width="1"></path>
-            </svg>
-          </div>
-          <div class="mt-4 flex gap-4 justify-center">
-            <div class="flex items-center gap-1">
-              <div class="w-2 h-2 rounded-full bg-primary"></div>
-              <span class="text-[10px] text-on-surface-variant uppercase">Critical</span>
-            </div>
-            <div class="flex items-center gap-1">
-              <div class="w-2 h-2 rounded-full bg-secondary"></div>
-              <span class="text-[10px] text-on-surface-variant uppercase">Normal</span>
-            </div>
-          </div>
+          <h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-6">💬 Feedback gần đây</h3>
+          <div id="feedback-feed-list"></div>
         </div>
 
         <!-- Daily Retro Detail -->
         <div class="bg-surface-container p-6 rounded-xl border border-outline-variant/10">
-          <h3 class="text-xs font-black uppercase tracking-widest text-on-surface-variant mb-4">Daily Retro Detail</h3>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-black uppercase tracking-widest text-on-surface-variant">Daily Retro Detail</h3>
+            <!-- #13: Retro Quality Score -->
+            <div id="retro-quality-badge"></div>
+          </div>
           <div id="retro-content"></div>
         </div>
       </div>
@@ -233,6 +274,18 @@
 
   <!-- ============ TAB: 7 NGÀY ============ -->
   <div id="view-week7" class="hidden">
+
+    <!-- #9: Feedback Matrix (Đội ngũ tab — also in week7 for now) -->
+    <section id="feedback-matrix-section" class="mb-8">
+      <h2 class="text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-primary"></span>
+        📊 Ma trận Feedback
+      </h2>
+      <div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10">
+        <div id="feedback-matrix-grid"></div>
+      </div>
+    </section>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
       <!-- Trend Charts -->
@@ -259,6 +312,8 @@
           <span class="text-[10px] text-on-surface-variant">Thứ 6</span>
           <span class="text-[10px] text-on-surface-variant">Thứ 7</span>
         </div>
+        <!-- #5: Trend Annotations -->
+        <div id="trend-annotations" class="mt-4 space-y-1"></div>
       </div>
 
       <!-- Project Health (7-day view) -->
@@ -271,6 +326,42 @@
 
   <!-- ============ TAB: TUẦN ============ -->
   <div id="view-week" class="hidden">
+
+    <!-- #10: Weekly Insight -->
+    <section id="weekly-insight-section" class="mb-8">
+      <div id="weekly-insight-card" class="relative overflow-hidden rounded-xl border border-primary/20 p-8" style="background: linear-gradient(135deg, rgba(109,59,215,0.2) 0%, rgba(17,19,25,0.9) 100%);">
+        <div class="relative z-10">
+          <p class="text-[10px] font-black uppercase tracking-widest text-primary/70 mb-3">💡 Weekly Insight</p>
+          <p id="weekly-insight-text" class="text-lg font-semibold text-on-surface leading-relaxed"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- #7: Cost Metrics Section -->
+    <section id="cost-metrics-section" class="mb-8">
+      <h2 class="text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-tertiary"></span>
+        💰 Hiệu quả chi phí
+      </h2>
+      <div id="cost-metrics-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- #14: Improvement Velocity Chart -->
+    <section id="improvement-velocity-section" class="mb-8">
+      <h2 class="text-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-secondary"></span>
+        📈 Tốc độ cải thiện
+      </h2>
+      <div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10">
+        <div id="improvement-chart"></div>
+        <div class="flex items-center justify-center gap-6 mt-4">
+          <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-primary/40"></span><span class="text-[10px] text-on-surface-variant">Observing</span></div>
+          <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-secondary/60"></span><span class="text-[10px] text-on-surface-variant">Promoted</span></div>
+          <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-tertiary/70"></span><span class="text-[10px] text-on-surface-variant">Rules</span></div>
+        </div>
+      </div>
+    </section>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
       <!-- Weekly Summary -->
@@ -278,10 +369,19 @@
         <div id="weekly-summary" class="bg-surface-container-highest/40 p-6 rounded-xl border border-outline-variant/20 relative overflow-hidden"></div>
       </div>
 
-      <!-- Lessons Learned -->
+      <!-- Lessons Learned (#6 enhanced) -->
       <div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10">
-        <h3 class="text-xs font-black uppercase tracking-widest text-on-surface-variant mb-6">Bài học kinh nghiệm</h3>
-        <div id="lessons-feed" class="space-y-6 relative before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[1px] before:bg-outline-variant/30"></div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-black uppercase tracking-widest text-on-surface-variant">Bài học kinh nghiệm</h3>
+        </div>
+        <!-- Lesson filter buttons -->
+        <div id="lesson-filters" class="flex flex-wrap gap-2 mb-4">
+          <button class="lesson-filter-btn active" onclick="filterLessons('all')">Tất cả</button>
+          <button class="lesson-filter-btn" onclick="filterLessons('observing')">👁 Observing</button>
+          <button class="lesson-filter-btn" onclick="filterLessons('promoted')">✅ Promoted</button>
+          <button class="lesson-filter-btn" onclick="filterLessons('adopted')">🔄 Adopted</button>
+        </div>
+        <div id="lessons-feed" class="space-y-4 relative before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[1px] before:bg-outline-variant/30 max-h-[500px] overflow-y-auto no-scrollbar"></div>
       </div>
     </div>
   </div>
@@ -289,7 +389,7 @@
 </main>
 
 <!-- Floating Action Button (FAB) -->
-<button class="fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary-container rounded-full shadow-lg flex items-center justify-center scale-95 active:opacity-80 transition-transform z-50">
+<button class="fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary-container rounded-full shadow-lg flex items-center justify-center scale-95 active:opacity-80 transition-transform z-50" onclick="showToast('⚡ Quick actions: Assign Task / Resolve Item — coming soon!')">
   <span class="material-symbols-outlined text-3xl">add</span>
 </button>
 
@@ -300,6 +400,8 @@
 let DASHBOARD_DATA = null;
 let selectedDate = '';
 let currentTab = 'today';
+let currentLessonFilter = 'all';
+let dismissedAlerts = new Set();
 
 // Empty skeleton fallback
 const EMPTY_DATA = {
@@ -342,11 +444,21 @@ async function loadDashboardData() {
 }
 
 // ============================================================
+// TOAST (#15)
+// ============================================================
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ============================================================
 // TAB SWITCHING
 // ============================================================
 function switchTab(tab) {
   currentTab = tab;
-  // Update button styles
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.className = 'tab-btn px-4 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 text-slate-400 hover:text-slate-200';
   });
@@ -354,13 +466,11 @@ function switchTab(tab) {
   if (activeBtn) {
     activeBtn.className = 'tab-btn px-4 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 bg-primary/20 text-primary';
   }
-  // Show/hide views
   document.getElementById('view-today').classList.toggle('hidden', tab !== 'today');
   document.getElementById('view-week7').classList.toggle('hidden', tab !== 'week7');
   document.getElementById('view-week').classList.toggle('hidden', tab !== 'week');
-  // Re-render if needed
-  if (tab === 'week7') renderTrends();
-  if (tab === 'week') renderWeeklySummary();
+  if (tab === 'week7') { renderTrends(); renderTrendAnnotations(); renderFeedbackMatrix(); }
+  if (tab === 'week') { renderWeeklySummary(); renderWeeklyInsight(); renderCostMetrics(); renderImprovementVelocity(); renderLessons(DASHBOARD_DATA?.lessons); }
 }
 
 // ============================================================
@@ -393,6 +503,12 @@ function healthColor(pct) {
   return 'bg-error';
 }
 
+function healthTextColor(pct) {
+  if (pct >= 70) return 'text-secondary';
+  if (pct >= 40) return 'text-tertiary';
+  return 'text-error';
+}
+
 function statusIcon(status) {
   if (status === 'clean' || status === 'ok') return '<span class="material-symbols-outlined text-sm text-secondary">check_circle</span>';
   if (status === 'behind' || status === 'warn') return '<span class="material-symbols-outlined text-sm text-tertiary">history</span>';
@@ -404,6 +520,17 @@ function emptyState(msg) {
     <span class="material-symbols-outlined text-4xl text-outline-variant/40 mb-3">inbox</span>
     <p class="text-xs text-on-surface-variant">${esc(msg)}</p>
   </div>`;
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Hôm nay';
+  if (diffDays === 1) return 'Hôm qua';
+  return `${diffDays} ngày trước`;
 }
 
 // ============================================================
@@ -432,8 +559,58 @@ function renderKPIs(scoreboard) {
 }
 
 // ============================================================
-// RENDER: AGENT CARDS
+// #12: HEALTH SCORE CIRCLE SVG
 // ============================================================
+function healthCircleSVG(score, trend) {
+  const pct = Math.max(0, Math.min(100, score ?? 0));
+  const circumference = 2 * Math.PI * 22;
+  const offset = circumference - (pct / 100) * circumference;
+  let color = '#ef4444'; // red <50
+  if (pct >= 80) color = '#4ae176'; // green
+  else if (pct >= 50) color = '#ffb95f'; // yellow
+  const trendArrow = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→';
+  const trendColor = trend === 'up' ? '#4ae176' : trend === 'down' ? '#ef4444' : '#958ea0';
+  return `
+    <div class="health-circle flex-shrink-0">
+      <svg width="56" height="56" viewBox="0 0 56 56">
+        <circle cx="28" cy="28" r="22" fill="none" stroke="#33343b" stroke-width="4"/>
+        <circle cx="28" cy="28" r="22" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
+      </svg>
+      <div class="score-text" style="color:${color}">${pct}</div>
+    </div>
+    <span class="text-xs font-bold" style="color:${trendColor}">${trendArrow}</span>
+  `;
+}
+
+// ============================================================
+// #1 & #12: RENDER: AGENT CARDS (with status badges + health circles)
+// ============================================================
+function renderAgentStatusBadge(agent) {
+  const status = agent?.agentStatus || agent?.status || 'unknown';
+  const detail = agent?.statusDetail || '';
+  let badge = '', badgeClass = '';
+  switch(status) {
+    case 'working':
+      badge = '🟢 Đang làm việc'; badgeClass = 'bg-secondary/10 text-secondary border-secondary/20'; break;
+    case 'waiting':
+      badge = '🟡 Chờ task'; badgeClass = 'bg-tertiary/10 text-tertiary border-tertiary/20'; break;
+    case 'idle':
+      const days = agent?.idleDays ?? '?';
+      badge = `⚫ Idle ${days} ngày`; badgeClass = 'bg-outline-variant/10 text-on-surface-variant border-outline-variant/20'; break;
+    case 'reviewing':
+      badge = '🔵 Đang review'; badgeClass = 'bg-primary/10 text-primary border-primary/20'; break;
+    default:
+      badge = '⚪ Unknown'; badgeClass = 'bg-outline-variant/10 text-on-surface-variant border-outline-variant/20';
+  }
+  return `
+    <div class="mt-2 space-y-1">
+      <span class="text-[10px] ${badgeClass} px-2 py-0.5 rounded-full border uppercase font-bold tracking-tighter inline-block">${badge}</span>
+      ${detail ? `<p class="text-[10px] text-on-surface-variant italic">${esc(detail)}</p>` : ''}
+    </div>
+  `;
+}
+
 function renderAgents(agents) {
   if (!agents || agents.length === 0) {
     document.getElementById('agent-cards-primary').innerHTML = emptyState('Chưa có dữ liệu agent');
@@ -441,7 +618,6 @@ function renderAgents(agents) {
     return;
   }
 
-  // Primary agents (first 4): Coach, Lebron, Bronny, Curry
   const primary = agents.slice(0, 4);
   const secondary = agents.slice(4);
 
@@ -454,10 +630,15 @@ function renderAgents(agents) {
     const status = a.status || 'unknown';
     const statusColor = status === 'active' ? 'secondary' : status === 'idle' ? 'tertiary' : 'error';
     const statusLabel = status === 'active' ? 'Hoạt động' : status === 'idle' ? 'Chờ' : 'Lỗi';
-    const healthPct = a.health ?? 0;
+
+    // #12: Health score circle
+    const healthScore = a.healthScore ?? a.health ?? 0;
+    const healthTrend = a.healthTrend ?? null;
+    const healthBreakdown = a.healthBreakdown || null;
+
     return `
       <div class="bg-surface-container p-5 rounded-xl border border-outline-variant/10 hover:bg-surface-bright transition-all duration-200">
-        <div class="flex justify-between items-start mb-4">
+        <div class="flex justify-between items-start mb-2">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-full bg-${color}/20 flex items-center justify-center border border-${color}/40">
               <span class="material-symbols-outlined text-${color} text-2xl" data-weight="fill">${icon}</span>
@@ -465,14 +646,20 @@ function renderAgents(agents) {
             <div>
               <h4 class="font-bold text-lg leading-tight">${esc(a.name)}</h4>
               <span class="text-[10px] bg-${statusColor}/10 text-${statusColor} px-2 py-0.5 rounded-full border border-${statusColor}/20 uppercase font-bold tracking-tighter">${esc(statusLabel)}</span>
+              ${renderAgentStatusBadge(a)}
             </div>
           </div>
-          <div class="text-right">
-            <p class="text-[10px] text-on-surface-variant uppercase font-semibold">${a.healthLabel || 'Health'}</p>
-            <p class="text-lg font-bold text-${healthPct >= 70 ? 'secondary' : healthPct >= 40 ? 'tertiary' : 'error'}">${esc(String(a.health ?? '—'))}${typeof a.health === 'number' ? '%' : ''}</p>
+          <!-- #12: Health circle instead of plain number -->
+          <div class="flex flex-col items-center gap-1">
+            ${healthCircleSVG(healthScore, healthTrend)}
+            <p class="text-[9px] text-on-surface-variant">${esc(a.healthLabel || 'Health')}</p>
           </div>
         </div>
-        <div class="space-y-3">
+        ${healthBreakdown ? `
+        <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+          ${healthBreakdown.map(b => `<span class="text-[9px] text-on-surface-variant"><span class="font-semibold">${esc(b.label)}</span>: ${esc(String(b.value))}</span>`).join('')}
+        </div>` : ''}
+        <div class="space-y-3 mt-3">
           ${a.metric1Label ? `<div class="flex justify-between text-xs"><span class="text-on-surface-variant">${esc(a.metric1Label)}</span><span class="font-mono">${esc(String(a.metric1 ?? '—'))}</span></div>` : ''}
           ${a.metric2Label ? `<div class="flex justify-between text-xs"><span class="text-on-surface-variant">${esc(a.metric2Label)}</span><span class="font-mono">${esc(String(a.metric2 ?? '—'))}</span></div>` : ''}
           ${typeof a.barPct === 'number' ? `
@@ -484,18 +671,24 @@ function renderAgents(agents) {
     `;
   }).join('');
 
-  // Secondary agents: tuvi-agent, laoshi-agent, MiniSama
+  // Secondary agents: with status badges + health circles
   document.getElementById('agent-cards-secondary').innerHTML = secondary.map(a => {
     const status = a.status || 'unknown';
     const dotColor = status === 'active' ? 'bg-secondary pulse-dot' : status === 'idle' ? 'bg-tertiary' : 'bg-error';
+    const healthScore = a.healthScore ?? a.health ?? 0;
+    const healthTrend = a.healthTrend ?? null;
     return `
       <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
         <div class="flex justify-between items-center mb-2">
           <p class="text-[10px] font-bold text-on-surface-variant uppercase">${esc(a.name)}</p>
-          <span class="w-2 h-2 ${dotColor} rounded-full"></span>
+          <div class="flex items-center gap-2">
+            ${healthCircleSVG(healthScore, healthTrend)}
+            <span class="w-2 h-2 ${dotColor} rounded-full"></span>
+          </div>
         </div>
         <p class="text-lg font-bold">${esc(String(a.mainValue ?? '—'))}</p>
         <p class="text-[10px] text-on-surface-variant italic">${esc(a.mainLabel ?? '')}</p>
+        ${renderAgentStatusBadge(a)}
       </div>
     `;
   }).join('');
@@ -544,7 +737,6 @@ function renderProjects(projects) {
     `;
   }).join('');
 
-  // 7-day view: compact list
   projects7day.innerHTML = projects.map(p => {
     const healthPct = p.health ?? 0;
     const hColor = healthColor(healthPct);
@@ -566,7 +758,45 @@ function renderProjects(projects) {
 }
 
 // ============================================================
-// RENDER: RETRO
+// #3: PRIORITY BADGES & AGE FOR ACTION ITEMS
+// ============================================================
+function priorityBadge(priority) {
+  switch(priority) {
+    case 0: case 'P0': return '<span class="text-[9px] font-bold bg-error/15 text-error px-1.5 py-0.5 rounded border border-error/20">🔴 P0</span>';
+    case 1: case 'P1': return '<span class="text-[9px] font-bold bg-tertiary/15 text-tertiary px-1.5 py-0.5 rounded border border-tertiary/20">🟡 P1</span>';
+    case 2: case 'P2': return '<span class="text-[9px] font-bold bg-outline-variant/15 text-on-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/20">⚪ P2</span>';
+    default: return '';
+  }
+}
+
+function priorityBorderColor(priority) {
+  switch(priority) {
+    case 0: case 'P0': return 'border-l-4 border-l-error';
+    case 1: case 'P1': return 'border-l-4 border-l-tertiary';
+    case 2: case 'P2': return 'border-l-4 border-l-outline-variant';
+    default: return '';
+  }
+}
+
+// ============================================================
+// #13: RETRO QUALITY SCORE
+// ============================================================
+function renderRetroQualityBadge(retro) {
+  const el = document.getElementById('retro-quality-badge');
+  const score = retro?.qualityScore ?? retro?.quality ?? null;
+  if (score === null) { el.innerHTML = ''; return; }
+
+  let label, labelClass;
+  if (score >= 90) { label = '✅ Perfect'; labelClass = 'bg-secondary/15 text-secondary border-secondary/30'; }
+  else if (score >= 70) { label = '👍 Good'; labelClass = 'bg-primary/15 text-primary border-primary/30'; }
+  else if (score >= 40) { label = '⚠️ Partial'; labelClass = 'bg-tertiary/15 text-tertiary border-tertiary/30'; }
+  else { label = '❌ Minimal'; labelClass = 'bg-error/15 text-error border-error/30'; }
+
+  el.innerHTML = `<span class="text-[10px] font-bold ${labelClass} px-2.5 py-1 rounded-full border">${label} ${score}%</span>`;
+}
+
+// ============================================================
+// RENDER: RETRO (with #3 priority + age, #13 quality badge)
 // ============================================================
 function renderRetro() {
   const container = document.getElementById('retro-content');
@@ -575,8 +805,12 @@ function renderRetro() {
 
   if (!retro) {
     container.innerHTML = emptyState('Chưa có retro cho ngày này');
+    document.getElementById('retro-quality-badge').innerHTML = '';
     return;
   }
+
+  // #13: Quality badge
+  renderRetroQualityBadge(retro);
 
   let html = '<div class="space-y-4">';
 
@@ -603,22 +837,181 @@ function renderRetro() {
 
   html += '</div>';
 
-  // Action Items
+  // Action Items with #3: priority + age
   if (retro.actionItems && retro.actionItems.length > 0) {
     html += '<div class="mt-6"><p class="text-[10px] font-bold text-on-surface-variant uppercase mb-3">Action Items</p><ul class="space-y-2">';
     retro.actionItems.forEach(item => {
       const done = item.done || item.status === 'done';
       const icon = done ? 'check_box' : 'check_box_outline_blank';
       const style = done ? 'line-through text-on-surface-variant' : '';
-      html += `<li class="flex items-center gap-2 text-xs">
-        <span class="material-symbols-outlined text-sm ${done ? 'text-secondary' : 'text-outline'}">${icon}</span>
-        <span class="${style}">${esc(item.text || item.action || '')}</span>
+      const priority = item.priority ?? item.priorityLevel ?? null;
+      const ageDays = item.ageDays ?? item.age ?? null;
+      const overdueDot = (ageDays !== null && ageDays > 3 && !done)
+        ? '<span class="w-2 h-2 rounded-full bg-error pulse-red-dot inline-block ml-1"></span>' : '';
+      const ageText = ageDays !== null && ageDays > 0
+        ? `<span class="text-[9px] text-on-surface-variant ml-auto flex-shrink-0">${esc(String(ageDays))} ngày trước</span>` : '';
+      html += `<li class="flex items-start gap-2 text-xs p-2 rounded-lg bg-surface-container-low/30 ${priorityBorderColor(priority)}">
+        <span class="material-symbols-outlined text-sm ${done ? 'text-secondary' : 'text-outline'} mt-0.5">${icon}</span>
+        <div class="flex-1 min-w-0">
+          <span class="${style}">${esc(item.text || item.action || '')}</span>
+          ${priority !== null ? `<span class="ml-2 inline-flex">${priorityBadge(priority)}</span>` : ''}
+        </div>
+        ${overdueDot}
+        ${ageText}
       </li>`;
     });
     html += '</ul></div>';
   }
 
   container.innerHTML = html;
+}
+
+// ============================================================
+// #2: ACTIVE TASKS
+// ============================================================
+function renderActiveTasks(tasks) {
+  const container = document.getElementById('active-tasks-list');
+  if (!tasks || tasks.length === 0) {
+    container.innerHTML = emptyState('Không có task đang chạy');
+    return;
+  }
+
+  container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+    ${tasks.map(t => {
+      const statusColor = t.status === 'running' ? 'bg-secondary' : t.status === 'blocked' ? 'bg-error' : 'bg-tertiary';
+      const statusLabel = t.status === 'running' ? 'Đang chạy' : t.status === 'blocked' ? 'Bị chặn' : 'Chờ';
+      return `
+        <div class="bg-surface-container-high p-4 rounded-xl border border-outline-variant/10 flex items-start gap-3 hover:bg-surface-bright transition-all">
+          <span class="text-2xl flex-shrink-0">${esc(t.agentEmoji || t.emoji || '📋')}</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-bold truncate">${esc(t.name || t.task || '')}</p>
+            <p class="text-[10px] text-on-surface-variant mt-0.5">${esc(t.agent || '')} · ${esc(timeAgo(t.startedAt || t.startDate))}</p>
+            <span class="inline-block mt-1.5 text-[9px] font-bold uppercase tracking-tighter text-white px-2 py-0.5 rounded ${statusColor}">${esc(statusLabel)}</span>
+          </div>
+        </div>
+      `;
+    }).join('')}
+  </div>`;
+}
+
+// ============================================================
+// #4: FEEDBACK FEED
+// ============================================================
+function renderFeedbackFeed(feedback) {
+  const container = document.getElementById('feedback-feed-list');
+  if (!feedback || feedback.length === 0) {
+    container.innerHTML = emptyState('Chưa có feedback');
+    return;
+  }
+
+  container.innerHTML = `<div class="feedback-timeline space-y-4">
+    ${feedback.map((f, i) => {
+      const typeIcon = f.type === 'coaching' ? '📋' : f.type === 'praise' ? '👍' : f.type === 'correction' ? '🔧' : '💬';
+      const dotBg = f.type === 'coaching' ? 'bg-primary' : f.type === 'praise' ? 'bg-secondary' : f.type === 'correction' ? 'bg-tertiary' : 'bg-outline-variant';
+      return `
+        <div class="relative">
+          <div class="feedback-dot ${dotBg}"></div>
+          <div class="bg-surface-container-low/50 p-3 rounded-lg">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm">${typeIcon}</span>
+              <span class="text-[10px] font-bold">${esc(f.from || '?')}</span>
+              <span class="text-[10px] text-on-surface-variant">→</span>
+              <span class="text-[10px] font-bold">${esc(f.to || '?')}</span>
+              <span class="text-[9px] text-on-surface-variant ml-auto">${esc(timeAgo(f.date || f.createdAt))}</span>
+            </div>
+            <p class="text-xs text-on-surface leading-relaxed">${esc(f.text || f.message || '')}</p>
+          </div>
+        </div>
+      `;
+    }).join('')}
+  </div>`;
+}
+
+// ============================================================
+// #5: TREND ANNOTATIONS
+// ============================================================
+function renderTrendAnnotations() {
+  const container = document.getElementById('trend-annotations');
+  const annotations = DASHBOARD_DATA?.trendAnnotations || DASHBOARD_DATA?.annotations || [];
+  if (!annotations || annotations.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = annotations.map(a => `
+    <div class="flex items-center gap-2 text-[10px] text-on-surface-variant">
+      <span>${esc(a.icon || '📌')}</span>
+      <span class="font-semibold">${esc(a.date || '')}</span>
+      <span>—</span>
+      <span>${esc(a.text || a.label || '')}</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// #8: RESOLUTION SLA
+// ============================================================
+function renderSLA(sla) {
+  const container = document.getElementById('sla-grid');
+  if (!sla) {
+    // Try to derive from scoreboard or retro action items
+    container.innerHTML = emptyState('Chưa có dữ liệu SLA');
+    return;
+  }
+
+  const boxes = [
+    { label: '24h', value: sla.resolved24h ?? sla.within24h ?? 0, good: true },
+    { label: '48h', value: sla.resolved48h ?? sla.within48h ?? 0, good: true },
+    { label: '1 tuần', value: sla.resolvedWeek ?? sla.withinWeek ?? 0, good: true },
+    { label: 'Quá hạn', value: sla.overdue ?? sla.expired ?? 0, good: (sla.overdue ?? sla.expired ?? 0) === 0 }
+  ];
+
+  container.innerHTML = boxes.map(b => `
+    <div class="bg-surface-container-high p-4 rounded-xl border border-outline-variant/10 text-center">
+      <p class="text-2xl font-bold ${b.good ? 'text-secondary' : 'text-error'}">${esc(String(b.value))}</p>
+      <p class="text-[10px] text-on-surface-variant font-semibold uppercase mt-1">${esc(b.label)}</p>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// #11: ALERTS
+// ============================================================
+function renderAlerts(alerts) {
+  const section = document.getElementById('alerts-section');
+  const container = document.getElementById('alerts-list');
+  if (!alerts || alerts.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  const visibleAlerts = alerts.filter((a, i) => !dismissedAlerts.has(i));
+  if (visibleAlerts.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  section.classList.remove('hidden');
+  container.innerHTML = visibleAlerts.map((a, origIdx) => {
+    const idx = alerts.indexOf(a);
+    const isCritical = a.level === 'critical' || a.severity === 'critical';
+    const bg = isCritical ? 'bg-error/10 border-error/30' : 'bg-tertiary/10 border-tertiary/30';
+    const icon = isCritical ? '⚠️' : '⚡';
+    const textColor = isCritical ? 'text-error' : 'text-tertiary';
+    return `
+      <div class="flex items-center gap-3 px-4 py-3 rounded-lg border ${bg}">
+        <span class="text-lg flex-shrink-0">${icon}</span>
+        <p class="text-sm ${textColor} flex-1">${esc(a.message || a.text || '')}</p>
+        ${a.agent ? `<span class="text-[10px] font-bold bg-surface-container-lowest px-2 py-0.5 rounded-full text-on-surface-variant">${esc(a.agent)}</span>` : ''}
+        <button onclick="dismissAlert(${idx})" class="text-on-surface-variant hover:text-on-surface transition-colors flex-shrink-0">
+          <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function dismissAlert(idx) {
+  dismissedAlerts.add(idx);
+  renderAlerts(DASHBOARD_DATA?.alerts);
 }
 
 // ============================================================
@@ -634,7 +1027,7 @@ function renderTrends() {
   }
 
   const maxVal = Math.max(...trends.velocity, ...trends.quality, 1);
-  const toY = (v) => 100 - (v / maxVal) * 80 - 10; // scale to 10-90 range
+  const toY = (v) => 100 - (v / maxVal) * 80 - 10;
 
   let velPath = '';
   let qualPath = '';
@@ -709,28 +1102,280 @@ function renderWeeklySummary() {
 }
 
 // ============================================================
-// RENDER: LESSONS
+// #6: LESSON ADOPTION TRACKING + FILTER
 // ============================================================
+function filterLessons(filter) {
+  currentLessonFilter = filter;
+  document.querySelectorAll('.lesson-filter-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  renderLessons(DASHBOARD_DATA?.lessons);
+}
+
 function renderLessons(lessons) {
   const container = document.getElementById('lessons-feed');
+  const filter = currentLessonFilter;
 
   if (!lessons || lessons.length === 0) {
     container.innerHTML = emptyState('Chưa có bài học');
     return;
   }
 
-  container.innerHTML = lessons.map((l, i) => {
+  const filtered = filter === 'all' ? lessons : lessons.filter(l => (l.adoptionStatus || l.status) === filter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = emptyState(`Không có bài học "${filter}" nào`);
+    return;
+  }
+
+  container.innerHTML = filtered.map((l, i) => {
     const dotColor = i % 2 === 0 ? 'bg-primary' : 'bg-secondary';
     const tagColor = i % 2 === 0 ? 'text-primary' : 'text-secondary';
+    const status = l.adoptionStatus || l.status || 'observing';
+    let statusBadge = '';
+    switch(status) {
+      case 'observing': statusBadge = '<span class="text-[9px] bg-outline-variant/15 text-on-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/20">👁 Observing</span>'; break;
+      case 'promoted': statusBadge = '<span class="text-[9px] bg-secondary/15 text-secondary px-1.5 py-0.5 rounded border border-secondary/20">✅ Promoted</span>'; break;
+      case 'adopted': statusBadge = '<span class="text-[9px] bg-primary/15 text-primary px-1.5 py-0.5 rounded border border-primary/20">🔄 Adopted</span>'; break;
+    }
+    const adoptedDate = l.adoptedDate ? `<p class="text-[9px] text-on-surface-variant italic mt-1">Đã áp dụng lại ${esc(timeAgo(l.adoptedDate))}</p>` : '';
     return `
       <div class="relative pl-8">
         <div class="absolute left-0 top-1 w-4 h-4 rounded-full ${dotColor} border-4 border-surface-container-high"></div>
         <p class="text-xs font-bold mb-1">${esc(l.title || '')}</p>
         <p class="text-[10px] text-on-surface-variant mb-2">${esc(l.body || '')}</p>
-        ${l.tag ? `<span class="text-[8px] bg-surface-container px-2 py-0.5 rounded border border-outline-variant/20 uppercase font-black ${tagColor}">${esc(l.tag)}</span>` : ''}
+        <div class="flex items-center gap-2 flex-wrap">
+          ${l.tag ? `<span class="text-[8px] bg-surface-container px-2 py-0.5 rounded border border-outline-variant/20 uppercase font-black ${tagColor}">${esc(l.tag)}</span>` : ''}
+          ${statusBadge}
+        </div>
+        ${adoptedDate}
       </div>
     `;
   }).join('');
+}
+
+// ============================================================
+// #7: COST METRICS
+// ============================================================
+function renderCostMetrics() {
+  const container = document.getElementById('cost-metrics-grid');
+  const cm = DASHBOARD_DATA?.costMetrics || DASHBOARD_DATA?.cost;
+  const agents = DASHBOARD_DATA?.agents || [];
+
+  if (!cm) {
+    container.innerHTML = `<div class="md:col-span-3">${emptyState('Chưa có dữ liệu chi phí')}</div>`;
+    return;
+  }
+
+  const totalTokens = cm.totalTokens ?? cm.tokens ?? 0;
+  const costPerTask = cm.costPerTask ?? null;
+  const totalCost = cm.totalCost ?? cm.estimatedCost ?? null;
+
+  // KPI card
+  let html = `
+    <div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 text-center">
+      <p class="text-[10px] text-on-surface-variant font-semibold uppercase mb-2">Cost / Task</p>
+      <p class="text-3xl font-bold ${costPerTask !== null && costPerTask > 0 ? 'text-tertiary' : 'text-outline-variant'}">${costPerTask !== null ? '$' + esc(String(costPerTask)) : '—'}</p>
+      ${totalCost !== null ? `<p class="text-[10px] text-on-surface-variant mt-1">Tổng: $${esc(String(totalCost))}</p>` : ''}
+    </div>
+  `;
+
+  // Token count card
+  html += `
+    <div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 text-center">
+      <p class="text-[10px] text-on-surface-variant font-semibold uppercase mb-2">Tokens</p>
+      <p class="text-3xl font-bold ${totalTokens > 0 ? 'text-primary' : 'text-outline-variant'}">${totalTokens > 0 ? Number(totalTokens).toLocaleString() : '—'}</p>
+      <p class="text-[10px] text-on-surface-variant mt-1">${totalTokens > 0 ? 'tuần này' : 'Chưa có dữ liệu token'}</p>
+    </div>
+  `;
+
+  // Agent cost breakdown (CSS bars)
+  const agentCosts = cm.agentBreakdown || cm.byAgent || [];
+  if (agentCosts.length > 0) {
+    const maxCost = Math.max(...agentCosts.map(a => a.cost ?? a.tokens ?? 0), 1);
+    html += `<div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 md:col-span-1">
+      <p class="text-[10px] text-on-surface-variant font-semibold uppercase mb-4">Chi phí theo Agent</p>
+      <div class="space-y-3">
+        ${agentCosts.map(a => {
+          const val = a.cost ?? a.tokens ?? 0;
+          const pct = (val / maxCost) * 100;
+          return `
+            <div>
+              <div class="flex justify-between text-[10px] mb-1">
+                <span class="font-semibold">${esc(a.agent || a.name || '?')}</span>
+                <span class="text-on-surface-variant">${esc(String(a.cost ? '$' + a.cost : a.tokens ? Number(a.tokens).toLocaleString() + ' tok' : val))}</span>
+              </div>
+              <div class="w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden">
+                <div class="bg-primary/60 h-full rounded-full" style="width: ${Math.min(100, pct)}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 flex items-center justify-center">
+      ${emptyState('Chưa có breakdown agent')}
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ============================================================
+// #9: FEEDBACK MATRIX
+// ============================================================
+function renderFeedbackMatrix() {
+  const container = document.getElementById('feedback-matrix-grid');
+  const matrix = DASHBOARD_DATA?.feedbackMatrix || null;
+  const feedback = DASHBOARD_DATA?.feedback || [];
+  const agents = (DASHBOARD_DATA?.agents || []).map(a => a.name);
+
+  if (!matrix && feedback.length === 0) {
+    container.innerHTML = emptyState('Chưa có dữ liệu feedback');
+    return;
+  }
+
+  // Build matrix from raw feedback if no pre-computed matrix
+  let counts = {};
+  if (matrix) {
+    counts = matrix;
+  } else {
+    feedback.forEach(f => {
+      const from = f.from || '?';
+      const to = f.to || '?';
+      counts[`${from}->${to}`] = (counts[`${from}->${to}`] || 0) + 1;
+    });
+  }
+
+  const allAgents = matrix ? (matrix.agents || agents) : agents;
+  if (allAgents.length === 0) {
+    container.innerHTML = emptyState('Chưa có dữ liệu agent');
+    return;
+  }
+
+  const maxCount = Math.max(...Object.values(counts), 1);
+
+  let html = `<div class="overflow-x-auto"><table class="w-full text-center text-xs">`;
+  // Header row
+  html += `<tr><th class="p-2"></th>${allAgents.map(a => `<th class="p-2 text-[10px] font-bold text-on-surface-variant">${esc(a)}</th>`).join('')}</tr>`;
+
+  // Data rows
+  allAgents.forEach(from => {
+    html += `<tr><td class="p-2 text-[10px] font-bold text-on-surface-variant text-right">${esc(from)}</td>`;
+    allAgents.forEach(to => {
+      const key = `${from}->${to}`;
+      const count = counts[key] || 0;
+      const isSelf = from === to;
+      const intensity = Math.min(count / maxCount, 1);
+      const bgColor = isSelf ? 'rgba(51,52,59,0.3)' : `rgba(208,188,255,${intensity * 0.5})`;
+      const textColor = count > 0 && !isSelf ? `rgba(208,188,255,${0.5 + intensity * 0.5})` : 'rgba(203,195,215,0.3)';
+      html += `<td class="p-1"><div class="matrix-cell" style="background:${bgColor};color:${textColor}">${count > 0 && !isSelf ? count : '—'}</div></td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</table></div>`;
+  container.innerHTML = html;
+}
+
+// ============================================================
+// #10: WEEKLY INSIGHT
+// ============================================================
+function renderWeeklyInsight() {
+  const el = document.getElementById('weekly-insight-text');
+  const insight = DASHBOARD_DATA?.weeklyInsight || DASHBOARD_DATA?.weeklySummary?.insight || null;
+  if (!insight) {
+    const ws = DASHBOARD_DATA?.weeklySummary;
+    if (ws?.wins?.length) {
+      el.textContent = `Tuần này Dream Team hoàn thành ${ws.wins.length} wins. ${ws.improvements?.length ? `Cần cải thiện ${ws.improvements.length} điểm.` : ''}`;
+    } else {
+      el.textContent = 'Chưa có insight cho tuần này. Dữ liệu sẽ được cập nhật sau retro Chủ nhật.';
+    }
+    return;
+  }
+  el.textContent = insight;
+}
+
+// ============================================================
+// #14: IMPROVEMENT VELOCITY CHART
+// ============================================================
+function renderImprovementVelocity() {
+  const container = document.getElementById('improvement-chart');
+  const data = DASHBOARD_DATA?.improvementVelocity || DASHBOARD_DATA?.lessonVelocity || null;
+  const lessons = DASHBOARD_DATA?.lessons || [];
+
+  if (!data || !data.weeks || data.weeks.length === 0) {
+    // Derive from lessons if no pre-computed data
+    if (lessons.length > 0) {
+      // Group lessons by week
+      const weekMap = {};
+      lessons.forEach(l => {
+        if (!l.date) return;
+        const d = new Date(l.date);
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - d.getDay() + 1); // Monday
+        const key = weekStart.toISOString().split('T')[0];
+        if (!weekMap[key]) weekMap[key] = { observing: 0, promoted: 0, adopted: 0 };
+        const status = l.adoptionStatus || l.status || 'observing';
+        if (status === 'adopted') weekMap[key].adopted++;
+        else if (status === 'promoted') weekMap[key].promoted++;
+        else weekMap[key].observing++;
+      });
+
+      const weeks = Object.keys(weekMap).sort();
+      const values = weeks.map(w => weekMap[w]);
+      const maxVal = Math.max(...values.map(v => v.observing + v.promoted + v.adopted), 1);
+
+      container.innerHTML = `
+        <div class="flex items-end gap-3 h-40">
+          ${weeks.map((w, i) => {
+            const v = values[i];
+            const total = v.observing + v.promoted + v.adopted;
+            return `
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full flex flex-col gap-0.5" style="height: 140px; justify-content: flex-end;">
+                  <div class="w-full rounded-t" style="height: ${(v.adopted / maxVal) * 100}%; background: rgba(255,185,95,0.7); min-height: ${v.adopted > 0 ? '4px' : '0'}"></div>
+                  <div class="w-full" style="height: ${(v.promoted / maxVal) * 100}%; background: rgba(74,225,118,0.6); min-height: ${v.promoted > 0 ? '4px' : '0'}"></div>
+                  <div class="w-full rounded-b" style="height: ${(v.observing / maxVal) * 100}%; background: rgba(208,188,255,0.4); min-height: ${v.observing > 0 ? '4px' : '0'}"></div>
+                </div>
+                <span class="text-[9px] text-on-surface-variant">${total}</span>
+                <span class="text-[8px] text-on-surface-variant">${esc(w.slice(5))}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    } else {
+      container.innerHTML = emptyState('Chưa có dữ liệu cải thiện');
+    }
+    return;
+  }
+
+  // Pre-computed data
+  const { weeks, observing, promoted, rules } = data;
+  const maxVal = Math.max(...weeks.map((_, i) => (observing?.[i] ?? 0) + (promoted?.[i] ?? 0) + (rules?.[i] ?? 0)), 1);
+
+  container.innerHTML = `
+    <div class="flex items-end gap-3 h-40">
+      ${weeks.map((w, i) => {
+        const obs = observing?.[i] ?? 0;
+        const pro = promoted?.[i] ?? 0;
+        const rul = rules?.[i] ?? 0;
+        const total = obs + pro + rul;
+        return `
+          <div class="flex-1 flex flex-col items-center gap-1">
+            <div class="w-full flex flex-col gap-0.5" style="height: 140px; justify-content: flex-end;">
+              <div class="w-full rounded-t velocity-bar" style="height: ${(rul / maxVal) * 100}%; background: rgba(255,185,95,0.7); min-height: ${rul > 0 ? '4px' : '0'}"></div>
+              <div class="w-full velocity-bar" style="height: ${(pro / maxVal) * 100}%; background: rgba(74,225,118,0.6); min-height: ${pro > 0 ? '4px' : '0'}"></div>
+              <div class="w-full rounded-b velocity-bar" style="height: ${(obs / maxVal) * 100}%; background: rgba(208,188,255,0.4); min-height: ${obs > 0 ? '4px' : '0'}"></div>
+            </div>
+            <span class="text-[9px] text-on-surface-variant">${total}</span>
+            <span class="text-[8px] text-on-surface-variant">${esc(w)}</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
 }
 
 // ============================================================
@@ -745,10 +1390,19 @@ async function init() {
   renderProjects(DASHBOARD_DATA?.projects);
   renderRetro();
   renderLessons(DASHBOARD_DATA?.lessons);
+  renderActiveTasks(DASHBOARD_DATA?.activeTasks);
+  renderFeedbackFeed(DASHBOARD_DATA?.feedback);
+  renderSLA(DASHBOARD_DATA?.sla);
+  renderAlerts(DASHBOARD_DATA?.alerts);
 
   // Pre-render hidden views
   renderTrends();
+  renderTrendAnnotations();
   renderWeeklySummary();
+  renderWeeklyInsight();
+  renderCostMetrics();
+  renderImprovementVelocity();
+  renderFeedbackMatrix();
 
   // Hide loading overlay
   const overlay = document.getElementById('loading-overlay');

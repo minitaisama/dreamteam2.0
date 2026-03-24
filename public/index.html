@@ -689,7 +689,7 @@ function renderAgents(agents) {
   const primaryNames = ['coach', 'lebron', 'bronny', 'curry'];
   const secondaryNames = ['tuvi', 'laoshi'];
 
-  const primary = agents.filter(a => !primaryNames.some(n => (a.name || '').toLowerCase().includes(n)) && !(a.name || '').toLowerCase().includes('mini'));
+  const primary = agents.filter(a => primaryNames.some(n => (a.name || '').toLowerCase().includes(n)));
   const secondary = agents.filter(a => secondaryNames.some(n => (a.name || '').toLowerCase().includes(n)));
 
   const primaryIcons = ['smart_toy', 'psychology', 'code', 'verified'];

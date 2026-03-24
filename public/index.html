@@ -389,7 +389,7 @@
 </main>
 
 <!-- Floating Action Button (FAB) -->
-<button class="fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary-container rounded-full shadow-lg flex items-center justify-center scale-95 active:opacity-80 transition-transform z-50" onclick="showToast('⚡ Quick actions: Assign Task / Resolve Item — coming soon!')">
+<button class="fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary-container rounded-full shadow-lg flex items-center justify-center scale-95 active:opacity-80 transition-transform z-50" onclick="showToast('⚡ Quick actions: Assign Task / Resolve Item — planned for next release')">
   <span class="material-symbols-outlined text-3xl">add</span>
 </button>
 
@@ -932,7 +932,7 @@ function renderFeedbackFeed(feedback) {
 // ============================================================
 function renderTrendAnnotations() {
   const container = document.getElementById('trend-annotations');
-  const annotations = DASHBOARD_DATA?.trendAnnotations || DASHBOARD_DATA?.annotations || [];
+  const annotations = DASHBOARD_DATA?.trendAnnotations || DASHBOARD_DATA?.annotations || DASHBOARD_DATA?.trends?.annotations || [];
   if (!annotations || annotations.length === 0) {
     container.innerHTML = '';
     return;

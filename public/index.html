@@ -137,6 +137,7 @@
         <span class="material-symbols-outlined text-primary text-lg">hub</span>
       </div>
       <h1 class="text-lg font-bold text-slate-100 tracking-tight">Dream Team</h1>
+      <span id="last-updated" class="text-[10px] text-on-surface-variant hidden"></span>
     </div>
 
     <!-- Tabs: Hôm nay | Tuần -->
@@ -165,18 +166,11 @@
     </div>
   </div>
   <nav class="flex flex-col gap-1 flex-grow">
-    <a class="flex items-center gap-3 px-3 py-3 text-violet-400 font-semibold bg-violet-500/10 rounded-lg transition-all" href="#">
+    <span class="flex items-center gap-3 px-3 py-3 text-violet-400 font-semibold bg-violet-500/10 rounded-lg transition-all">
       <span class="material-symbols-outlined text-lg">dashboard</span>
       <span class="text-sm">Tổng quan</span>
-    </a>
-    <a class="flex items-center gap-3 px-3 py-3 text-slate-500 hover:bg-slate-800/50 hover:text-slate-200 rounded-lg transition-all" href="#">
-      <span class="material-symbols-outlined text-lg">insights</span>
-      <span class="text-sm">Hiệu suất</span>
-    </a>
-    <a class="flex items-center gap-3 px-3 py-3 text-slate-500 hover:bg-slate-800/50 hover:text-slate-200 rounded-lg transition-all" href="#">
-      <span class="material-symbols-outlined text-lg">help</span>
-      <span class="text-sm">Hỗ trợ</span>
-    </a>
+    </span>
+
   </nav>
 </aside>
 
@@ -190,10 +184,7 @@
     <span class="material-symbols-outlined">insights</span>
     <span>Tuần</span>
   </div>
-  <div class="bottom-nav-item" onclick="showToast('Tính năng đang phát triển')">
-    <span class="material-symbols-outlined">help</span>
-    <span>Hỗ trợ</span>
-  </div>
+
 </nav>
 
 <!-- ===== MAIN CONTENT ===== -->
@@ -282,7 +273,7 @@
     </section>
 
     <!-- Tốc độ xử lý (compact row) -->
-    <section>
+    <section id="sla-section-today">
       <h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">⏱ Tốc độ xử lý</h3>
       <div id="sla-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
     </section>
@@ -358,7 +349,7 @@
         <h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">💰 Hiệu quả chi phí</h3>
         <div id="cost-metrics-grid" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
       </section>
-      <section>
+      <section id="sla-section-week">
         <h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">⏱ Tốc độ xử lý</h3>
         <div id="sla-grid-week" class="grid grid-cols-2 gap-3"></div>
       </section>
@@ -575,7 +566,7 @@ function healthCircleSVG(score, trend, size, showNA) {
   const r = (sz - 8) / 2;
   const c = 2 * Math.PI * r;
   const o = c - (pct / 100) * c;
-  const displayText = isNA ? '—' : pct;
+  const displayText = isNA ? '' : pct;
   const displayColor = isNA ? '#958ea0' : color;
   return `
     <div class="health-circle" style="width:${sz}px;height:${sz}px;" title="Điểm sức khỏe = tổng hợp hiệu suất, chất lượng, phản hồi. 70+ Tốt, 40-69 Bình thường, <40 Cần chú ý">
@@ -658,49 +649,20 @@ function renderMiniSama(agents) {
     return;
   }
 
-  const healthScore = ms.healthScore ?? ms.health ?? 0;
-  const healthTrend = ms.healthTrend ?? null;
-
   container.innerHTML = `
-    <div class="relative overflow-hidden rounded-xl border-2 border-primary/30 p-6 md:p-8" style="background: linear-gradient(135deg, rgba(109,59,215,0.25) 0%, rgba(30,31,38,1) 100%); box-shadow: 0 0 40px rgba(109,59,215,0.15);">
-      <!-- CEO Badge -->
-      <div class="absolute top-3 right-3">
-        <span class="text-[11px] font-black bg-primary/20 text-primary px-3 py-1.5 rounded-full border border-primary/30 uppercase tracking-wider">👑 CEO</span>
+    <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+      <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 flex-shrink-0">
+        <span class="material-symbols-outlined text-primary text-2xl" data-weight="fill">account_circle</span>
       </div>
-      <div class="flex items-center gap-4">
-        <div class="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/40 flex-shrink-0">
-          <span class="material-symbols-outlined text-primary text-3xl" data-weight="fill">account_circle</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <h4 class="text-sm font-bold text-slate-100 leading-tight truncate">${esc(ms.name)}</h4>
+          <span class="text-[10px] font-black bg-primary/20 text-primary px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider flex-shrink-0">👑 CEO</span>
         </div>
-        <div class="flex-1 min-w-0">
-          <h4 class="text-xl font-black text-slate-100 leading-tight">${esc(ms.name)}</h4>
-          <div class="mt-1.5 flex items-center gap-2 flex-wrap">
-            ${renderAgentStatusBadge(ms)}
-          </div>
-        </div>
-        <div class="flex flex-col items-center gap-1 flex-shrink-0">
-          ${hScore(ms, DASHBOARD_DATA?.agents, 56)}
-          <p class="text-[11px] text-on-surface-variant">${allAgentsSameScore(DASHBOARD_DATA?.agents) ? 'N/A' : 'Health'}</p>
+        <div class="mt-0.5 flex items-center gap-2">
+          ${renderAgentStatusBadge(ms)}
         </div>
       </div>
-      <!-- Metrics row -->
-      <div class="mt-4 grid grid-cols-3 gap-3">
-        ${ms.metric1Label ? `<div class="bg-surface-container-low/50 rounded-lg p-3 text-center">
-          <p class="text-lg font-bold">${esc(String(ms.metric1 ?? '—'))}</p>
-          <p class="text-[11px] text-on-surface-variant">${esc(ms.metric1Label)}</p>
-        </div>` : ''}
-        ${ms.metric2Label ? `<div class="bg-surface-container-low/50 rounded-lg p-3 text-center">
-          <p class="text-lg font-bold">${esc(String(ms.metric2 ?? '—'))}</p>
-          <p class="text-[11px] text-on-surface-variant">${esc(ms.metric2Label)}</p>
-        </div>` : ''}
-        <div class="bg-surface-container-low/50 rounded-lg p-3 text-center">
-          <p class="text-lg font-bold">${esc(String(ms.mainValue ?? '—'))}</p>
-          <p class="text-[11px] text-on-surface-variant">${esc(ms.mainLabel ?? 'Score')}</p>
-        </div>
-      </div>
-      ${typeof ms.barPct === 'number' ? `
-      <div class="mt-3 w-full bg-surface-container-lowest h-2 rounded-full overflow-hidden">
-        <div class="bg-primary h-full rounded-full" style="width: ${Math.min(100, Math.max(0, ms.barPct))}%"></div>
-      </div>` : ''}
     </div>
   `;
 }
@@ -717,7 +679,7 @@ function renderAgents(agents) {
 
   // MiniSama is rendered separately
   const primaryNames = ['coach', 'lebron', 'bronny', 'curry'];
-  const secondaryNames = ['tuvi', 'laoshi'];
+  const secondaryNames = [];
 
   const primary = agents.filter(a => primaryNames.some(n => (a.name || '').toLowerCase().includes(n)));
   const secondary = agents.filter(a => secondaryNames.some(n => (a.name || '').toLowerCase().includes(n)));
@@ -750,13 +712,13 @@ function renderAgents(agents) {
         <!-- Expandable details -->
         <div class="agent-card-details">
           <div class="mt-3 pt-3 border-t border-outline-variant/10 space-y-2">
-            ${a.metric1Label ? `<div class="flex justify-between text-xs"><span class="text-on-surface-variant">${esc(a.metric1Label)}</span><span class="font-mono font-semibold">${esc(String(a.metric1 ?? '—'))}</span></div>` : ''}
-            ${a.metric2Label ? `<div class="flex justify-between text-xs"><span class="text-on-surface-variant">${esc(a.metric2Label)}</span><span class="font-mono font-semibold">${esc(String(a.metric2 ?? '—'))}</span></div>` : ''}
+            ${a.metric1Label ? `<div class="flex justify-between text-xs"><span class="text-on-surface-variant">${esc(a.metric1Label)}</span><span class="font-mono font-semibold">${esc(String((a.metric1 ?? 0) === 0 || a.metric1 === '' || a.metric1 === '0' ? '—' : a.metric1))}</span></div>` : ''}
+            ${a.metric2Label ? `<div class="flex justify-between text-xs"><span class="text-on-surface-variant">${esc(a.metric2Label)}</span><span class="font-mono font-semibold">${esc(String((a.metric2 ?? 0) === 0 || a.metric2 === '' || a.metric2 === '0' ? '—' : a.metric2))}</span></div>` : ''}
             ${typeof a.barPct === 'number' ? `
             <div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden mt-2">
               <div class="bg-${color} h-full rounded-full" style="width: ${Math.min(100, Math.max(0, a.barPct))}%"></div>
             </div>` : ''}
-            ${a.mainLabel ? `<div class="flex justify-between text-xs"><span class="text-on-surface-variant">${esc(a.mainLabel)}</span><span class="font-mono font-semibold">${esc(String(a.mainValue ?? '—'))}</span></div>` : ''}
+            ${a.mainLabel ? `<div class="flex justify-between text-xs"><span class="text-on-surface-variant">${esc(a.mainLabel)}</span><span class="font-mono font-semibold">${esc(String((a.mainValue ?? 0) === 0 || a.mainValue === '' || a.mainValue === '0' ? '—' : a.mainValue))}</span></div>` : ''}
           </div>
         </div>
       </div>
@@ -778,7 +740,7 @@ function renderAgents(agents) {
           </div>
           ${hScore(a, agents, 36)}
         </div>
-        <p class="text-base font-bold">${esc(String(a.mainValue ?? '—'))}</p>
+        <p class="text-base font-bold">${esc(String((a.mainValue === 0 || a.mainValue === '0' || a.mainValue === '' || !a.mainValue) ? '—' : a.mainValue))}</p>
         <p class="text-[11px] text-on-surface-variant">${esc(a.mainLabel ?? '')}</p>
         ${renderAgentStatusBadge(a)}
       </div>
@@ -1027,25 +989,53 @@ function dismissAlert(idx) {
 // ============================================================
 // RENDER: SLA
 // ============================================================
+function setSectionVisible(sectionId, visible) {
+  const section = document.getElementById(sectionId);
+  if (section) section.style.display = visible ? '' : 'none';
+}
+
 function renderSLA(sla) {
   renderSLAWeek(sla);
 }
 
 function renderSLAWeek(sla) {
-  const container = document.getElementById('sla-grid') || document.getElementById('sla-grid-week');
+  const containers = ['sla-grid', 'sla-grid-week'];
   if (!sla) {
-    if (container) container.innerHTML = emptyState('Dữ liệu sẽ tự cập nhật khi action items được resolve.', 'Dữ liệu sẽ cập nhật khi action items được resolve.');
+    containers.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    });
+    setSectionVisible('sla-section-today', false);
+    setSectionVisible('sla-section-week', false);
     return;
   }
+  const r24 = sla.resolved24h ?? sla.within24h ?? 0;
+  const r48 = sla.resolved48h ?? sla.within48h ?? 0;
+  const rw = sla.resolvedWeek ?? sla.withinWeek ?? 0;
+  const od = sla.overdue ?? sla.expired ?? 0;
+
+  const allZero = (r24 === 0 && r48 === 0 && rw === 0 && od === 0);
+  if (allZero) {
+    containers.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    });
+    setSectionVisible('sla-section-today', false);
+    setSectionVisible('sla-section-week', false);
+    return;
+  }
+
+  setSectionVisible('sla-section-today', true);
+  setSectionVisible('sla-section-week', true);
+
   const boxes = [
-    { label: '24h', value: sla.resolved24h ?? sla.within24h ?? 0, good: true },
-    { label: '48h', value: sla.resolved48h ?? sla.within48h ?? 0, good: true },
-    { label: '1 tuần', value: sla.resolvedWeek ?? sla.withinWeek ?? 0, good: true },
-    { label: 'Quá hạn', value: sla.overdue ?? sla.expired ?? 0, good: (sla.overdue ?? sla.expired ?? 0) === 0 }
+    { label: '24h', value: r24, good: true },
+    { label: '48h', value: r48, good: true },
+    { label: '1 tuần', value: rw, good: true },
+    { label: 'Quá hạn', value: od, good: od === 0 }
   ];
 
-  // Render in both containers
-  ['sla-grid', 'sla-grid-week'].forEach(id => {
+  containers.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.innerHTML = boxes.map(b => `
@@ -1066,6 +1056,17 @@ function renderTrends() {
 
   if (!trends || !trends.velocity || trends.velocity.length === 0) {
     container.innerHTML = emptyState('Chưa có dữ liệu xu hướng');
+    return;
+  }
+
+  // Check if fewer than 2 non-zero velocity values
+  const nonZeroVelocity = (trends.velocity || []).filter(v => v > 0).length;
+  if (nonZeroVelocity < 2) {
+    container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center">
+      <span class="material-symbols-outlined text-4xl text-outline-variant/30 mb-2">trending_up</span>
+      <p class="text-sm text-on-surface-variant font-medium">Chưa đủ dữ liệu xu hướng</p>
+      <p class="text-[11px] text-on-surface-variant/60 mt-1">Cần ≥ 2 ngày hoạt động</p>
+    </div>`;
     return;
   }
 
@@ -1218,7 +1219,7 @@ function renderLessons(lessons) {
         <p class="text-xs font-bold mb-1">${esc(l.title || '')}</p>
         <p class="text-[11px] text-on-surface-variant mb-2">${esc(l.body || '')}</p>
         <div class="flex items-center gap-2 flex-wrap">
-          ${l.tag ? `<span class="text-[8px] bg-surface-container px-2 py-0.5 rounded border border-outline-variant/20 uppercase font-black ${tagColor}">${esc(l.tag)}</span>` : ''}
+          ${l.tag ? `<span class="text-[10px] bg-surface-container px-2 py-0.5 rounded border border-outline-variant/20 uppercase font-black ${tagColor}">${esc(l.tag)}</span>` : ''}
           ${statusBadge}
         </div>
         ${adoptedDate}
@@ -1232,16 +1233,33 @@ function renderLessons(lessons) {
 // ============================================================
 function renderCostMetrics() {
   const container = document.getElementById('cost-metrics-grid');
+  const section = document.getElementById('cost-metrics-section');
   const cm = DASHBOARD_DATA?.costMetrics || DASHBOARD_DATA?.cost;
 
   if (!cm) {
-    container.innerHTML = `<div class="md:col-span-3">${emptyState('Chưa có dữ liệu chi phí')}</div>`;
+    if (container) container.innerHTML = '';
+    setSectionVisible('cost-metrics-section', false);
     return;
   }
 
-  const totalTokens = cm.totalTokens ?? cm.tokens ?? 0;
+  const totalTokens = cm.totalTokens ?? cm.tokens ?? cm.totalTokensToday ?? 0;
   const costPerTask = cm.costPerTask ?? null;
   const totalCost = cm.totalCost ?? cm.estimatedCost ?? null;
+  const tasksCompleted = cm.tasksCompleted ?? 0;
+
+  // Check if all cost values are zero
+  const agentCosts = cm.agentBreakdown || cm.byAgent || cm.agentCosts || {};
+  const agentCostsArr = Array.isArray(agentCosts) ? agentCosts : Object.entries(agentCosts).map(([k,v]) => ({agent:k, ...v}));
+  const allAgentCostsZero = agentCostsArr.every(a => (a.cost ?? a.tokens ?? 0) === 0);
+  const allZero = totalTokens === 0 && (costPerTask === null || costPerTask === 0) && (totalCost === null || totalCost === 0) && tasksCompleted === 0 && allAgentCostsZero;
+
+  if (allZero) {
+    if (container) container.innerHTML = '';
+    setSectionVisible('cost-metrics-section', false);
+    return;
+  }
+
+  setSectionVisible('cost-metrics-section', true);
 
   let html = `
     <div class="bg-surface-container-high p-5 rounded-xl border border-outline-variant/10 text-center">
@@ -1256,13 +1274,12 @@ function renderCostMetrics() {
     </div>
   `;
 
-  const agentCosts = cm.agentBreakdown || cm.byAgent || [];
-  if (agentCosts.length > 0) {
-    const maxCost = Math.max(...agentCosts.map(a => a.cost ?? a.tokens ?? 0), 1);
+  if (agentCostsArr.length > 0) {
+    const maxCost = Math.max(...agentCostsArr.map(a => a.cost ?? a.tokens ?? 0), 1);
     html += `<div class="bg-surface-container-high p-5 rounded-xl border border-outline-variant/10">
       <p class="text-[11px] text-on-surface-variant font-semibold uppercase mb-4">Theo Agent</p>
       <div class="space-y-3">
-        ${agentCosts.map(a => {
+        ${agentCostsArr.map(a => {
           const val = a.cost ?? a.tokens ?? 0;
           const pct = (val / maxCost) * 100;
           return `
@@ -1294,7 +1311,7 @@ function renderCostMetrics() {
 function renderFeedbackMatrix() {
   const container = document.getElementById('feedback-matrix-grid');
   const matrix = DASHBOARD_DATA?.feedbackMatrix || null;
-  const feedback = DASHBOARD_DATA?.feedback || [];
+  const feedback = DASHBOARD_DATA?.feedbackFeed || [];
   const agents = (DASHBOARD_DATA?.agents || []).map(a => a.name);
 
   if (!matrix && feedback.length === 0) {
@@ -1319,7 +1336,19 @@ function renderFeedbackMatrix() {
     return;
   }
 
-  const maxCount = Math.max(...Object.values(counts), 1);
+  const hasCrossAgentFeedback = allAgents.some(from => allAgents.some(to => from !== to && ((counts[`${from}->${to}`] || 0) > 0)));
+  if (!hasCrossAgentFeedback) {
+    container.innerHTML = emptyState('Chưa có feedback chéo giữa các agent');
+    return;
+  }
+
+  const numericCounts = Object.entries(counts)
+    .filter(([key, value]) => {
+      const [from, to] = key.split('->');
+      return from && to && from !== to && Number(value) > 0;
+    })
+    .map(([, value]) => Number(value));
+  const maxCount = Math.max(...numericCounts, 1);
 
   let html = `<div class="overflow-x-auto no-scrollbar"><table class="w-full text-center text-xs min-w-[400px]">`;
   html += `<tr><th class="p-2"></th>${allAgents.map(a => `<th class="p-2 text-[11px] font-bold text-on-surface-variant">${esc(a)}</th>`).join('')}</tr>`;
@@ -1328,9 +1357,9 @@ function renderFeedbackMatrix() {
     html += `<tr><td class="p-2 text-[11px] font-bold text-on-surface-variant text-right">${esc(from)}</td>`;
     allAgents.forEach(to => {
       const key = `${from}->${to}`;
-      const count = counts[key] || 0;
+      const count = Number(counts[key] || 0);
       const isSelf = from === to;
-      const intensity = Math.min(count / maxCount, 1);
+      const intensity = count > 0 ? Math.min(count / maxCount, 1) : 0;
       const bgColor = isSelf ? 'rgba(51,52,59,0.3)' : `rgba(208,188,255,${intensity * 0.5})`;
       const textColor = count > 0 && !isSelf ? `rgba(208,188,255,${0.5 + intensity * 0.5})` : 'rgba(203,195,215,0.3)';
       html += `<td class="p-1"><div class="matrix-cell" style="background:${bgColor};color:${textColor}">${count > 0 && !isSelf ? count : '—'}</div></td>`;
@@ -1383,7 +1412,7 @@ function renderImprovementVelocity() {
                   <div class="w-full" style="height: ${(v.promoted / maxVal) * 100}%; background: rgba(74,225,118,0.6); min-height: ${v.promoted > 0 ? '4px' : '0'}"></div>
                   <div class="w-full rounded-b" style="height: ${(v.observing / maxVal) * 100}%; background: rgba(208,188,255,0.4); min-height: ${v.observing > 0 ? '4px' : '0'}"></div>
                 </div>
-                <span class="text-[8px] text-on-surface-variant">${esc(w.slice(5))}</span>
+                <span class="text-[10px] text-on-surface-variant">${esc(w.slice(5))}</span>
               </div>
             `;
           }).join('')}
@@ -1413,7 +1442,7 @@ function renderImprovementVelocity() {
               <div class="w-full velocity-bar" style="height: ${(pro / maxVal) * 100}%; background: rgba(74,225,118,0.6); min-height: ${pro > 0 ? '4px' : '0'}"></div>
               <div class="w-full rounded-b velocity-bar" style="height: ${(obs / maxVal) * 100}%; background: rgba(208,188,255,0.4); min-height: ${obs > 0 ? '4px' : '0'}"></div>
             </div>
-            <span class="text-[8px] text-on-surface-variant">${esc(w)}</span>
+            <span class="text-[10px] text-on-surface-variant">${esc(w)}</span>
           </div>
         `;
       }).join('')}
@@ -1460,13 +1489,29 @@ function renderCollapsibleBadges() {
   // Feedback count badge
   const feedbackBadge = document.getElementById('feedback-count-badge');
   const feedbackPreview = document.getElementById('feedback-preview');
-  const feedback = DASHBOARD_DATA?.feedback || [];
+  const feedback = DASHBOARD_DATA?.feedbackFeed || [];
   if (feedback.length > 0) {
     feedbackBadge.textContent = feedback.length;
     feedbackBadge.classList.remove('hidden');
     feedbackPreview.textContent = `${feedback.length} feedback${feedback.length > 1 ? ' gần đây' : ''}`;
     feedbackPreview.classList.remove('hidden');
   }
+}
+
+// ============================================================
+// LAST UPDATED INDICATOR
+// ============================================================
+function renderLastUpdated() {
+  const el = document.getElementById('last-updated');
+  const iso = DASHBOARD_DATA?.generatedAt;
+  if (!iso || !el) return;
+  try {
+    const d = new Date(iso);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    el.textContent = `Cập nhật lúc: ${hh}:${mm}`;
+    el.classList.remove('hidden');
+  } catch (e) { /* ignore parse errors */ }
 }
 
 // ============================================================
@@ -1482,10 +1527,11 @@ async function init() {
   renderProjects(DASHBOARD_DATA?.projects);
   renderRetro();
   renderActionItems();
-  renderFeedbackFeed(DASHBOARD_DATA?.feedback);
+  renderFeedbackFeed(DASHBOARD_DATA?.feedbackFeed);
   renderCollapsibleBadges();
   renderSLA(DASHBOARD_DATA?.sla);
   renderAlerts(DASHBOARD_DATA?.alerts);
+  renderLastUpdated();
 
   // Pre-render Week tab
   renderTrends();

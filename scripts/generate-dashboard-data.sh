@@ -485,8 +485,17 @@ for datedir in "$TMPDIR_RETRO"/*/; do
   [[ ! "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && continue
   [ ! -f "$datedir/feedback.txt" ] && continue
 
-  while IFS='|' read -r from_agent text; do
-    [ -z "$from_agent" ] && [ -z "$text" ] && continue
+  while IFS='|' read -r to_agent text; do
+    [ -z "$to_agent" ] && [ -z "$text" ] && continue
+
+    # Filter out self-feedback (from == to, case insensitive)
+    from_lower=$(printf '%s' "Coach" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
+    to_lower=$(printf '%s' "$to_agent" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
+    [ -z "$to_lower" ] && continue
+    if [[ "$from_lower" == "$to_lower" ]]; then
+      continue
+    fi
+
     fb_id=$((fb_id + 1))
     # Determine type based on content
     fb_type="coaching"
@@ -495,7 +504,7 @@ for datedir in "$TMPDIR_RETRO"/*/; do
     [[ "$text" =~ [Vv]iolat|[Bb]roke|[Ff]ail|[Mm]iss ]] && fb_type="correction"
 
     [ -n "$fb_arr" ] && fb_arr="$fb_arr,"
-    fb_arr="${fb_arr}{\"id\":${fb_id},\"date\":\"${date}\",\"from\":\"Coach\",\"to\":\"${from_agent}\",\"text\":\"${text}\",\"type\":\"${fb_type}\"}"
+    fb_arr="${fb_arr}{\"id\":${fb_id},\"date\":\"${date}\",\"from\":\"Coach\",\"to\":\"${to_agent}\",\"text\":\"${text}\",\"type\":\"${fb_type}\"}"
   done < "$datedir/feedback.txt"
 done
 
@@ -1358,7 +1367,7 @@ cat > "$OUTPUT_FILE" << ENDJSON
   "feedbackFeed": ${FEEDBACK_JSON},
   "feedbackMatrix": ${FEEDBACK_MATRIX_JSON},
   "costMetrics": {${COST_METRICS_JSON}},
-  "resolutionSLA": ${RESOLUTION_SLA_JSON},
+  "sla": ${RESOLUTION_SLA_JSON},
   "weeklyInsight": "$(jstr_arg "$WEEKLY_INSIGHT")",
   "healthScores": ${HEALTH_SCORES_JSON},
   "alerts": ${ALERTS_JSON},

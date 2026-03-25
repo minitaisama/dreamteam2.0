@@ -146,11 +146,6 @@
       <button onclick="switchTab('week')" id="tab-week" class="tab-btn px-4 py-2 text-xs font-semibold rounded-md transition-all duration-200 text-slate-400 hover:text-slate-200 min-h-[44px]">Tuần</button>
     </div>
 
-    <!-- Date picker -->
-    <div class="flex items-center bg-surface-container-lowest px-3 py-2 rounded-lg border border-outline-variant/20 min-h-[44px]">
-      <span class="material-symbols-outlined text-sm mr-2 text-violet-400">calendar_today</span>
-      <input type="date" id="date-picker" class="bg-transparent text-xs font-medium text-on-surface focus:outline-none cursor-pointer [color-scheme:dark]"/>
-    </div>
   </div>
 </header>
 
@@ -226,14 +221,21 @@
         <div class="flex items-center gap-3">
           <span class="material-symbols-outlined text-primary">history</span>
           <div>
-            <h3 class="text-sm font-bold">📋 Daily Retro <span id="retro-count-badge" class="text-[11px] bg-primary/15 text-primary px-2 py-0.5 rounded-full ml-1 hidden">0</span></h3>
-            <div id="retro-quality-badge" class="mt-0.5"></div>
-            <p id="retro-preview" class="text-[11px] text-on-surface-variant mt-0.5 hidden"></p>
+            <h3 class="text-sm font-bold">📋 Daily Retro</h3>
           </div>
         </div>
         <span id="retro-chevron" class="material-symbols-outlined text-on-surface-variant collapsible-chevron">expand_more</span>
       </button>
       <div id="retro-body" class="collapsible-body">
+        <div class="px-4 pt-2 pb-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="selectRetroDay(1)" id="retro-day-1" class="retro-day-btn text-xs px-4 py-2 rounded-lg font-medium transition-all min-h-[44px]">Hôm qua</button>
+            <button onclick="selectRetroDay(2)" id="retro-day-2" class="retro-day-btn text-xs px-4 py-2 rounded-lg font-medium transition-all min-h-[44px]">2 ngày trước</button>
+            <button onclick="selectRetroDay(3)" id="retro-day-3" class="retro-day-btn text-xs px-4 py-2 rounded-lg font-medium transition-all min-h-[44px]">3 ngày trước</button>
+            <span id="retro-date-label" class="text-xs text-on-surface-variant ml-auto"></span>
+          </div>
+          <div id="retro-quality-badge" class="mt-1"></div>
+        </div>
         <div id="retro-content" class="px-4 pb-4"></div>
       </div>
     </section>
@@ -442,33 +444,60 @@ function switchTab(tab) {
   // Sync bottom nav
   document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
   const bnav = document.getElementById('bnav-' + tab);
-  if (bnav) bnav.classList.add('active');
 
-  if (tab === 'week') {
-    renderTrends();
-    renderTrendAnnotations();
-    renderWeeklySummary();
-    renderWeeklyInsight();
-    renderCostMetrics();
-    renderImprovementVelocity();
-    renderLessons(DASHBOARD_DATA?.lessons);
-    renderFeedbackMatrix();
-    renderSLAWeek(DASHBOARD_DATA?.sla);
-  }
+// ============================================================
+// RETRO DATE NAVIGATION — simple 3-day buttons
+// ============================================================
+const DAY_NAMES_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+function getDayOffsetDate(daysAgo) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().split('T')[0];
 }
 
-// ============================================================
-// DATE PICKER
-// ============================================================
-function initDatePicker() {
-  const picker = document.getElementById('date-picker');
-  const today = new Date().toISOString().split('T')[0];
-  picker.value = today;
-  selectedDate = today;
-  picker.addEventListener('change', (e) => {
-    selectedDate = e.target.value;
-    renderRetro();
+function getDayNameVi(dateStr) {
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    return DAY_NAMES_VI[d.getDay()];
+  } catch { return ''; }
+}
+
+function selectRetroDay(daysAgo) {
+  const dateStr = getDayOffsetDate(daysAgo);
+  selectedDate = dateStr;
+  // Update button styles
+  document.querySelectorAll('.retro-day-btn').forEach(btn => {
+    btn.className = 'retro-day-btn text-xs px-4 py-2 rounded-lg font-medium transition-all min-h-[44px] bg-surface-container-high text-on-surface-variant border border-outline-variant/10';
   });
+  const activeBtn = document.getElementById('retro-day-' + daysAgo);
+  if (activeBtn) {
+    activeBtn.className = 'retro-day-btn text-xs px-4 py-2 rounded-lg font-medium transition-all min-h-[44px] bg-primary/20 text-primary border border-primary/30';
+  }
+  // Update date label
+  const label = document.getElementById('retro-date-label');
+  if (label) label.textContent = dateStr + ' (' + getDayNameVi(dateStr) + ')';
+  renderRetro();
+}
+
+function initDatePicker() {
+  selectRetroDay(1);
+}
+
+      activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
+}
+
+function initDatePicker() {
+  // Default: most recent date with retro data
+  const dates = getSortedRetroDates();
+  if (dates.length > 0) {
+    selectedDate = dates[dates.length - 1];
+  } else {
+    selectedDate = new Date().toISOString().split('T')[0];
+  }
+  initRetroCalendar();
 }
 
 // Check if all agents share the same health score (no real data)
@@ -802,15 +831,7 @@ function renderProjects(projects) {
 // RENDER: RETRO
 // ============================================================
 function renderRetroQualityBadge(retro) {
-  const el = document.getElementById('retro-quality-badge');
-  const score = retro?.qualityScore ?? retro?.quality ?? null;
-  if (score === null) { el.innerHTML = ''; return; }
-  let label, labelClass;
-  if (score >= 90) { label = '✅ Perfect'; labelClass = 'bg-secondary/15 text-secondary border-secondary/30'; }
-  else if (score >= 70) { label = '👍 Good'; labelClass = 'bg-primary/15 text-primary border-primary/30'; }
-  else if (score >= 40) { label = '⚠️ Partial'; labelClass = 'bg-tertiary/15 text-tertiary border-tertiary/30'; }
-  else { label = '❌ Minimal'; labelClass = 'bg-error/15 text-error border-error/30'; }
-  el.innerHTML = `<span class="text-[11px] font-bold ${labelClass} px-2 py-0.5 rounded-full border">${label} ${score}%</span>`;
+  
 }
 
 function renderRetro() {
@@ -820,7 +841,6 @@ function renderRetro() {
 
   if (!retro) {
     container.innerHTML = emptyState('Chưa có retro cho ngày này', 'Retro chưa chạy cho ngày này. Chọn ngày khác hoặc đợi 23:59.');
-    document.getElementById('retro-quality-badge').innerHTML = '';
     return;
   }
 
@@ -1458,20 +1478,8 @@ function renderCollapsibleBadges() {
   const retro = retros[selectedDate];
 
   // Retro count badge
-  const retroBadge = document.getElementById('retro-count-badge');
-  const retroPreview = document.getElementById('retro-preview');
-  if (retro) {
-    const wins = (retro.wins || []).length;
-    const probs = (retro.problems || []).length;
-    const actions = (retro.actionItems || []).length;
-    const total = wins + probs + actions;
-    if (total > 0) {
-      retroBadge.textContent = total;
-      retroBadge.classList.remove('hidden');
-    }
-    retroPreview.textContent = `${wins} wins · ${probs} vấn đề · ${actions} actions`;
-    retroPreview.classList.remove('hidden');
-  }
+  
+  // Skip old retro-count-badge / retro-preview — those elements removed
 
   // Action Items count badge
   const actionBadge = document.getElementById('action-count-badge');
@@ -1529,6 +1537,7 @@ async function init() {
   renderActionItems();
   renderFeedbackFeed(DASHBOARD_DATA?.feedbackFeed);
   renderCollapsibleBadges();
+  // retro date nav handled by selectRetroDay()
   renderSLA(DASHBOARD_DATA?.sla);
   renderAlerts(DASHBOARD_DATA?.alerts);
   renderLastUpdated();
